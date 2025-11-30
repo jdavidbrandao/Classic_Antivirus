@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.io.File;
 import java.nio.file.*;
  
-public class Varredura {
+public class Scanner {
 	private String initFolder; // Pasta inicial -> Onde o scanner vai começar a varredura
 	private ArrayList<String> files = new ArrayList<>(); // ArrayList para armazenar os arquivos encontrados
 	private ArrayList<String> folders = new ArrayList<>(); // ArrayList para armazenar os diretórios encontrados
  
-	public Varredura() { // Construtor sem argumentos, inicializa initFolder na pasta raíz
+	public Scanner() { // Construtor sem argumentos, inicializa initFolder na pasta raíz
 		initFolder = "/"; 
 	}
  
-	public Varredura(String initFolder) { // Sobrecarga do construtor, nesse caso a pasta inicial é outra pre-definida pelo usuário
+	public Scanner(String initFolder) { // Sobrecarga do construtor, nesse caso a pasta inicial é outra pre-definida pelo usuário
 		this.initFolder = initFolder;
 	}
  
@@ -47,4 +47,5 @@ public class Varredura {
 		return files;
 	}
 }
+
 
