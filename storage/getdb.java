@@ -9,8 +9,8 @@ public class getdb {
 	private Scanner sc = null;
 	private ArrayList<String> hashes = new ArrayList<>();
 	
-	public ArrayList<String> getDb() throws Exception {
-		File db = new File(Paths.get("src", "storage", "hashdatabase.txt").toString());
+	public ArrayList<String> getDb(String dbs) throws Exception {
+		File db = new File(Paths.get("src", "storage", dbs).toString());
 		
 		sc = new Scanner(db);
 		while (sc.hasNextLine()) {
