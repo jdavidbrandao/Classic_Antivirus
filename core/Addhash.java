@@ -2,8 +2,8 @@ import java.security.MessageDigest;
 import java.io.FileWriter;
 import java.io.BufferedWriter;
 
-public class AddHash{
-private MessageDigest motorHash;
+public class Addhash{
+    private MessageDigest motorHash;
 // Método com o propósito de receber um array de bytes onde será percorrido
 // e para cada byte dentro do array será convertido para hex
 // retornando uma String
