@@ -22,7 +22,7 @@ public class HashAnalyzer extends Antivirus {
 	    return null;        
 	}
 	
-	public Boolean isHashMalicious(String hash) throws Exception {
+	public Boolean isHashMalicious(String hash) {
 		getdb db = new getdb();
 		ArrayList<String> hashesdb = db.getHashDb();
 		for (String h : hashesdb) {
@@ -34,6 +34,25 @@ public class HashAnalyzer extends Antivirus {
 		return false;
 	}
 	
-	
-	
+	public Boolean isHashMalicious(byte[] fileContent) {
+		Addhash geth = new Addhash();
+		ArrayList<String> hashes = new ArrayList<>();
+		
+		hashes.add(geth.retorna_hash(fileContent, "MD5"));
+		hashes.add(geth.retorna_hash(fileContent, "SHA-1"));
+		hashes.add(geth.retorna_hash(fileContent, "SHA-256"));
+		
+		Boolean isMal = false;
+		for (String hash : hashes) {
+			isMal = isHashMalicious(hash);
+			if (isMal) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
+		
+
+	
+
