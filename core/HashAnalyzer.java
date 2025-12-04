@@ -24,7 +24,7 @@ public class HashAnalyzer extends Antivirus {
 	
 	public Boolean isHashMalicious(String hash) throws Exception {
 		getdb db = new getdb();
-		ArrayList<String> hashesdb = db.getDb();
+		ArrayList<String> hashesdb = db.getHashDb();
 		for (String h : hashesdb) {
 			if (h.equals(hash)) {
 				return true;
