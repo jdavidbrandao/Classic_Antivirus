@@ -1,0 +1,24 @@
+keylogge
+keylogger
+keylloger
+malware
+spyware
+rat
+stealer
+grabber
+graber
+mv
+cp
+mkdir
+rm
+rm -rf
+clear
+echo
+ransomware
+encrypt
+decrypt
+worm
+cd
+whoami
+pwd
+shutdown
