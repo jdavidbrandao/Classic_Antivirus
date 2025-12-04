@@ -7,11 +7,11 @@ public class Addhash{
 // Método com o propósito de receber um array de bytes onde será percorrido
 // e para cada byte dentro do array será convertido para hex
 // retornando uma String
-    public String retorna_hash(byte[] dados){
+    public String retorna_hash(byte[] dados, String algoritmo){
         try{
-            motorHash = MessageDigest.getInstance("SHA-256"); // Aqui é criado o "motor de hash"
+            motorHash = MessageDigest.getInstance(algoritmo); // Aqui é criado o "motor de hash"
             motorHash.update(dados); // Motor de hash é alimentado com os bytes recebidos
-            byte[] hashBytes = motorHash.digest(); // O novo vetor hashBytes contem o hash em forma pura de bytes 
+            byte[] hashBytes = motorHash.digest(); // O novo vetor hashBytes contem o hash em forma pura de bytes ,
             StringBuilder textoHash = new StringBuilder(); // Variável para montar o corpo dos bytes convertidos em hash
 
             int i = 0;
