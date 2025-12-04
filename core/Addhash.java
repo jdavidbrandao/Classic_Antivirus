@@ -1,3 +1,5 @@
+package core;
+
 import java.security.MessageDigest;
 import java.io.FileWriter;
 import java.io.BufferedWriter;
