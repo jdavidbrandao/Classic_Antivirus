@@ -4,12 +4,12 @@ import java.security.MessageDigest;
 import java.io.FileWriter;
 import java.io.BufferedWriter;
 
-public class Addhash{
+public class AddHash{
     private MessageDigest motorHash;
 // Método com o propósito de receber um array de bytes onde será percorrido
 // e para cada byte dentro do array será convertido para hex
 // retornando uma String
-    public String retorna_hash(byte[] dados, String algoritmo){
+    public String retornaHash(byte[] dados, String algoritmo){
         try{
             motorHash = MessageDigest.getInstance(algoritmo); // Aqui é criado o "motor de hash"
             motorHash.update(dados); // Motor de hash é alimentado com os bytes recebidos
@@ -38,11 +38,12 @@ public class Addhash{
     // salvaHash tem como parametro uma string e tem como objetivo escrever num arquivo .txt
     public boolean salvaHash(String textoHash){
         try (FileWriter escrita = new FileWriter("database.txt", true); // A string é adicionada no final do arquivo sem sobrescrita
-        BufferedWriter bufferEscrita = new BufferedWriter(escrita)){ // Melhoria para performance
-        bufferEscrita.write(textoHash); // Aqui a hash será escrita em database.txt
-        bufferEscrita.newLine(); // Depois de escrita é adicionado uma quebra de linha à hash
-        return true;
+            BufferedWriter bufferEscrita = new BufferedWriter(escrita)){ // Melhoria para performance
+            bufferEscrita.write(textoHash); // Aqui a hash será escrita em database.txt
+            bufferEscrita.newLine(); // Depois de escrita é adicionado uma quebra de linha à hash
+                return true;
         }
+        // Caso haja erro retorna false
         catch(Exception e){
             e.printStackTrace();
             return false;
