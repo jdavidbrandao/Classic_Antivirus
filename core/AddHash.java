@@ -2,6 +2,7 @@ package core;
 
 import java.security.MessageDigest;
 import java.io.FileWriter;
+import java.nio.file.Paths;
 import java.io.BufferedWriter;
 
 public class AddHash{
@@ -37,7 +38,7 @@ public class AddHash{
     }
     // salvaHash tem como parametro uma string e tem como objetivo escrever num arquivo .txt
     public boolean salvaHash(String textoHash){
-        try (FileWriter escrita = new FileWriter("database.txt", true); // A string é adicionada no final do arquivo sem sobrescrita
+        try (FileWriter escrita = new FileWriter(Paths.get("src", "storage", "hashdatabase.txt").toString(), true); // A string é adicionada no final do arquivo sem sobrescrita
             BufferedWriter bufferEscrita = new BufferedWriter(escrita)){ // Melhoria para performance
             bufferEscrita.write(textoHash); // Aqui a hash será escrita em database.txt
             bufferEscrita.newLine(); // Depois de escrita é adicionado uma quebra de linha à hash
