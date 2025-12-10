@@ -35,12 +35,12 @@ public class HashAnalyzer extends Antivirus {
 	}
 	
 	public Boolean isHashMalicious(byte[] fileContent) {
-		Addhash geth = new Addhash();
+		AddHash geth = new AddHash();
 		ArrayList<String> hashes = new ArrayList<>();
 		
-		hashes.add(geth.retorna_hash(fileContent, "MD5"));
-		hashes.add(geth.retorna_hash(fileContent, "SHA-1"));
-		hashes.add(geth.retorna_hash(fileContent, "SHA-256"));
+		hashes.add(geth.retornaHash(fileContent, "MD5"));
+		hashes.add(geth.retornaHash(fileContent, "SHA-1"));
+		hashes.add(geth.retornaHash(fileContent, "SHA-256"));
 		
 		Boolean isMal = false;
 		for (String hash : hashes) {
@@ -55,4 +55,3 @@ public class HashAnalyzer extends Antivirus {
 		
 
 	
-
