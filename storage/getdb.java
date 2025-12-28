@@ -39,17 +39,4 @@ public class getdb {
 		}
 	}
 	
-	public ArrayList<String> getMimeDb() {
-		File db = new File(Paths.get("src", "storage", "mimedb.txt").toString());
-		
-		try {
-			sc = new Scanner(db);
-			while (sc.hasNextLine()) {
-				wordlist.add(sc.nextLine());
-			}
-			return wordlist;
-		} catch (IOException e) {
-			return null;
-		}
-	}
 }
