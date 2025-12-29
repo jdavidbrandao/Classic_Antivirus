@@ -69,11 +69,7 @@ public class RealTimeAnalyzer implements Runnable {
 
     // Analisa o arquivo usando comparação de hash
     private boolean analyzeFile(String path) {
-        HashAnalyzer analyzer = new HashAnalyzer(path);
-        byte[] content = analyzer.getFileContent();
-        if (content == null) {
-            return false;
-        }
-        return analyzer.isHashMalicious(content);
+        HashAnalyzer analyzer = new HashAnalyzer();
+        return analyzer.isMalicious();
     }
 }
