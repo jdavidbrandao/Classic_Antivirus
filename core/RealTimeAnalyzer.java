@@ -1,49 +1,75 @@
 package core;
- 
-import java.util.ArrayList;
-import java.io.File;
-import java.nio.file.*;
- 
-public class Scanner {
-	private String initFolder; // Pasta inicial -> Onde o scanner vai começar a varredura
-	private ArrayList<String> files = new ArrayList<>(); // ArrayList para armazenar os arquivos encontrados
-	private ArrayList<String> folders = new ArrayList<>(); // ArrayList para armazenar os diretórios encontrados
- 
-	public Scanner() { // Construtor sem argumentos, inicializa initFolder na pasta raíz
-		initFolder = "/"; 
-	}
- 
-	public Scanner(String initFolder) { // Sobrecarga do construtor, nesse caso a pasta inicial é outra pre-definida pelo usuário
-		this.initFolder = initFolder;
-	}
- 
-	public void spider(String folder) { // Método spider, vai partir da pasta passada pelo usuário e vai varrer tudo que ele encontrar
-		File diretorio = new File(folder);
-		File[] arquivos = diretorio.listFiles();
- 
-		if (arquivos != null) {
-			for (File arquivo : arquivos) { 
-				if (Files.isSymbolicLink(arquivo.toPath())) continue; // Se o arquivo for um link simbólico, pula ele (Evitar uma recursão infinita)
-				if (arquivo.isDirectory() && !folders.contains(arquivo.getAbsolutePath()) ) {
-					folders.add(arquivo.getAbsolutePath());
-					spider(arquivo.getAbsolutePath()); // Se o "arquivo" do diretório listado for um diretório, escanea também o que tem dentro dele
-					continue;						   // recursivamente.
-				}
-				else if(arquivo.isFile() && !files.contains(arquivo.getAbsolutePath())) {
-					System.out.println("Arquivo: " + arquivo.getAbsolutePath());
-					files.add(arquivo.getAbsolutePath()); // Se for apenas um arquivo, salva ele no ArrayList
-					continue;
-				}
-			}
- 
-		}
-	}
- 
-	public void spider() {  // Sobrecarga do metodo spider, inicializa a varredura a partir de initFolder
-		spider(initFolder);
-	}
- 
-	public ArrayList<String> getFiles() { // Método para retornar o ArrayList com os arquivos encontrados pelo spider
-		return files;
-	}
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.WatchService;
+import java.nio.file.FileSystems;
+import java.nio.file.StandardWatchEventKinds;
+import java.io.IOException;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchEvent;
+import java.nio.file.Files;
+
+public class RealTimeAnalyzer implements Runnable {
+    // Diretório que será monitorado
+    private Path dir;
+    // Serviço que escuta mudanças no diretório
+    private WatchService watchservice;
+    // Recebe o diretório que queremos monitorar
+    public RealTimeAnalyzer(String dir) {
+        this.dir = Paths.get(dir);
+    }
+
+    // Inicializa o monitoramento do diretório
+    private void initWatch() {
+        try {
+            watchservice = FileSystems.getDefault().newWatchService();
+            // Define quais eventos queremos capturar
+            dir.register(watchservice, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Método que roda na Thread
+    public void run() {
+        initWatch();
+        // O programa fica rodando o tempo todo
+        while (true) {
+            try {
+                // Espera até acontecer alguma mudança no diretório
+                WatchKey key = watchservice.take();
+                // Percorre os eventos que aconteceram
+                for (WatchEvent<?> event : key.pollEvents()) {
+                    // Ignora eventos inválidos
+                    if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
+                        continue;
+                    }
+                    // Nome do arquivo que mudou
+                    Path fileName = (Path) event.context();
+                    // Caminho completo do arquivo
+                    Path fullPath = dir.resolve(fileName);
+                    // Só analisa se for um arquivo comum
+                    if (Files.isRegularFile(fullPath)) {
+                        boolean malicious = analyzeFile(fullPath.toString());
+                        if (malicious) {
+                            System.out.println("[ALERTA] Arquivo suspeito: " + fullPath);
+                        } else {
+                            System.out.println("[OK] Arquivo limpo: " + fullPath);
+                        }
+                    }
+                }
+                // Libera para continuar recebendo eventos
+                key.reset();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // Analisa o arquivo usando comparação de hash
+    private boolean analyzeFile(String path) {
+        HashAnalyzer analyzer = new HashAnalyzer();
+        return analyzer.isMalicious();
+    }
 }
