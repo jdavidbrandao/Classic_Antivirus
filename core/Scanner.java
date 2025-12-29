@@ -47,4 +47,3 @@ public class Scanner {
 		return files;
 	}
 }
-
