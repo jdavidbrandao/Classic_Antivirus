@@ -21,7 +21,6 @@ obfuscated
 encode
 encoded
 encryption
-decode
 decryption
 credential
 creds
@@ -43,7 +42,6 @@ logger
 logg
 l0gger
 netcat
-nc
 ncat
 nmap
 portscan
@@ -110,9 +108,6 @@ mal*ware
 sp@ware
 tro#jan
 keyllogekey + logger
-mal + ware
-ran + som + ware
-sp + y + ware
 socket
 winsock
 popen
@@ -145,6 +140,6 @@ listfiles
 permissionerror
 kill
 pkill
-mv
 move
 ransom
+cryptography
