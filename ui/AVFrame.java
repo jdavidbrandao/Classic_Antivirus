@@ -15,6 +15,20 @@ public class AVFrame extends JFrame {
     private JButton selectedButton = null;
 
     
+    private ArrayList<Object> scanComputer() {
+    	ArrayList<Object> result = new ArrayList<>();
+    	Thread t = new Thread(new Scanner());
+    	t.run();
+    	if (Scanner.detected) {
+    		result.add(true);
+    		result.add(Scanner.maliciousPath);
+    	} else {
+    		result.add(false);
+    		result.add(Scanner.maliciousPath);
+    	}
+    	return result;
+    }
+    
     private boolean removeFile(String path) {
     	File arquivo = new File(path);
     	arquivo.delete();
@@ -34,7 +48,7 @@ public class AVFrame extends JFrame {
     		}
 	    	
     		else if (arquivo.isFile()) {
-		    	Antivirus.path = arquivo.getAbsolutePath();
+		    	Antivirus.path.set(arquivo.getAbsolutePath());
 		    	Antivirus.getFileContent();
 		    	
 		    	Antivirus[] scanner = new Antivirus[3];
@@ -192,9 +206,15 @@ public class AVFrame extends JFrame {
         scan.setBackground(Color.WHITE);
         scan.addActionListener(e -> {
             JOptionPane.showMessageDialog(this,"Verifying files...\nPlease wait.","Verifying",JOptionPane.INFORMATION_MESSAGE);
-            boolean threatFound = Math.random() < 0.5;
-            if (threatFound){
-                JOptionPane.showMessageDialog(this,"Threat detected!\nA malicious file was found.","Threat Detected",JOptionPane.ERROR_MESSAGE);
+            ArrayList<Object> threatFound = scanComputer();
+            if ((Boolean) threatFound.get(0)){
+                JOptionPane.showMessageDialog(this,"Threat detected!\nA malicious file was found: " + (String) threatFound.get(1),"Threat Detected",JOptionPane.ERROR_MESSAGE);
+                boolean success = removeFile((String) threatFound.get(1));
+                if (success) {
+                	JOptionPane.showMessageDialog(this,"Threat killed.\nYour system is safe.", "Your system is safe",JOptionPane.PLAIN_MESSAGE);
+                } else {
+                	JOptionPane.showMessageDialog(this,"Couldnt delete the Thread.\nYour system is unsafe.", "Your system is unsafe",JOptionPane.ERROR_MESSAGE);
+                }
             }else{
                 JOptionPane.showMessageDialog(this,"No threats detected.\nYour system is safe.", "No Threat Detected",JOptionPane.PLAIN_MESSAGE);
             }
@@ -247,31 +267,7 @@ public class AVFrame extends JFrame {
         dir.setMaximumSize(new Dimension(180, 40));
         dir.setPreferredSize(new Dimension(180, 40));
         dir.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JButton rtaToggle = new JButton("Start");
-        rtaToggle.setFont(menuFont);
-        rtaToggle.setBackground(Color.WHITE);
-        rtaToggle.setFocusPainted(false);
-        rtaToggle.setOpaque(true);
-        rtaToggle.setMaximumSize(new Dimension(180, 40));
-        rtaToggle.setPreferredSize(new Dimension(180, 40));
-        rtaToggle.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        final boolean[] running = { false };
-        rtaToggle.addActionListener(e -> {
-            if (!running[0]) {
-                running[0] = true;
-                JOptionPane.showMessageDialog(this,"RTA activated\n","Real Time Analyzer",JOptionPane.INFORMATION_MESSAGE);
-                rtaToggle.setText("Stop");
-                rtaToggle.setBackground(new Color(220, 120, 120));
-            } else {
-                running[0] = false;
-                JOptionPane.showMessageDialog(this,"RTA desactivated\n","Real Time Analyzer",JOptionPane.INFORMATION_MESSAGE);
-                rtaToggle.setText("Start");
-                rtaToggle.setBackground(Color.WHITE);
-            }
-        });
-
+        
         Dimension checkBox = new Dimension(180, 25);
 
         JCheckBox temp = new JCheckBox("Temp");
@@ -288,6 +284,68 @@ public class AVFrame extends JFrame {
         desktop.setFont(menuFont);
         desktop.setAlignmentX(CENTER_ALIGNMENT);
         desktop.setMaximumSize(checkBox);
+        
+        JButton rtaToggle = new JButton("Start");
+        rtaToggle.setFont(menuFont);
+        rtaToggle.setBackground(Color.WHITE);
+        rtaToggle.setFocusPainted(false);
+        rtaToggle.setOpaque(true);
+        rtaToggle.setMaximumSize(new Dimension(180, 40));
+        rtaToggle.setPreferredSize(new Dimension(180, 40));
+        rtaToggle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        final boolean[] running = { false };
+        Thread[] threads = new Thread[3];
+        rtaToggle.addActionListener(e -> {
+            if (!running[0]) {
+
+                // Verifica se pelo menos um checkbox está selecionado
+                if (!temp.isSelected() && !downloads.isSelected() && !desktop.isSelected()) {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Selecione pelo menos um diretório.",
+                        "Aviso",
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                    return;
+                }
+
+                running[0] = true;
+                rtaToggle.setText("Stop");
+                rtaToggle.setBackground(new Color(220, 120, 120));
+
+                // Exemplo de uso
+                if (temp.isSelected()) {
+                	Thread t1 = new Thread(new RealTimeAnalyzer("/tmp"));
+                	t1.start();
+                	threads[0] = t1;
+                    System.out.println("Monitorando TEMP");
+                }
+                if (downloads.isSelected()) {
+                	Thread t2 = new Thread(new RealTimeAnalyzer("/home/kali/Downloads"));
+                	t2.start();
+                	threads[1] = t2;
+                    System.out.println("Monitorando DOWNLOADS");
+                }
+                if (desktop.isSelected()) {
+                	Thread t3 = new Thread(new RealTimeAnalyzer("/home/kali/Desktop"));
+                	t3.start();
+                	threads[2] = t3;
+                    System.out.println("Monitorando DESKTOP");
+                }
+
+            } else {
+                running[0] = false;
+                for (Thread t : threads) {
+                	if (t != null && t.isAlive()) {
+                		t.interrupt();
+                	}
+                }
+                rtaToggle.setText("Start");
+                rtaToggle.setBackground(Color.WHITE);
+            }
+        });
+
 
         // Tamanho dos botões
         Dimension blSize = new Dimension(160, 100);
