@@ -3,12 +3,67 @@ package ui;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import core.*;
 
 public class AVFrame extends JFrame {
 
     // Destaque seleção de botão
     private JButton selectedButton = null;
 
+    
+    private boolean removeFile(String path) {
+    	File arquivo = new File(path);
+    	arquivo.delete();
+		if (arquivo.exists()) {
+			return false;
+		}
+		return true;
+    }
+    
+    private ArrayList<Object> scanFolder(File dir) {
+    	File[] arquivos = dir.listFiles();
+    	ArrayList<Object> result = new ArrayList<>();
+    	
+    	for (File arquivo : arquivos) {
+    		if (Files.isSymbolicLink(arquivo.toPath())) {
+    			continue;
+    		}
+	    	
+    		else if (arquivo.isFile()) {
+		    	Antivirus.path = arquivo.getAbsolutePath();
+		    	Antivirus.getFileContent();
+		    	
+		    	Antivirus[] scanner = new Antivirus[3];
+		    	scanner[0] = new HashAnalyzer();
+		    	scanner[1] = new SignatureAnalyzer();
+		    	scanner[2] = new StringAnalyzer();
+		    	
+		    	if (scanner[0].isMalicious()) {
+		    		result.add(true);
+		    		result.add(arquivo.getAbsolutePath());
+		    		return result;
+		    	} else if (scanner[1].isMalicious()) {
+		    		result.add(true);
+		    		result.add(arquivo.getAbsolutePath());
+		    		return result;
+		    	}
+		    	if (scanner[2].isMalicious()) {
+		    		result.add(true);
+		    		result.add(arquivo.getAbsolutePath());
+		    		return result;
+		    	}
+		    	continue;
+    		}
+    	}
+    	result.add(false);
+    	result.add(null);
+    	return result;
+    }
+    
     private void selectMenuButton(JButton button) {
         if (selectedButton != null) {
             selectedButton.setBackground(Color.WHITE);
@@ -166,12 +221,17 @@ public class AVFrame extends JFrame {
 
             JOptionPane.showMessageDialog(this,"Verifying files...\nPlease wait.","Verifying",JOptionPane.INFORMATION_MESSAGE);
 
-            boolean threatFound = Math.random() < 0.5;
+            ArrayList<Object> threatFound = scanFolder(folder);
 
-            if (threatFound){
-                JOptionPane.showMessageDialog(this,"Threat detected!\nLocation: " + folder.getAbsolutePath() + "\nA malicious file was found.","Threat Detected",JOptionPane.ERROR_MESSAGE);
+            if ((Boolean) threatFound.get(0)){
+                JOptionPane.showMessageDialog(this,"Threat detected!\nLocation: " + threatFound.get(1) + "\nA malicious file was found.","Threat Detected",JOptionPane.ERROR_MESSAGE);
                 try{
-                    Desktop.getDesktop().open(folder);
+                    boolean neutralize = removeFile((String) threatFound.get(1));
+                    if (neutralize == false) {
+                    	JOptionPane.showMessageDialog(this,"Unable to remove the malicious file.","Access Denied Error",JOptionPane.ERROR_MESSAGE);
+                    } else {
+                    	JOptionPane.showMessageDialog(this,"Threat neutralized!","Success",JOptionPane.PLAIN_MESSAGE);
+                    }
                 }catch (Exception ex){
                     ex.printStackTrace();
                     JOptionPane.showMessageDialog(this,"Unable to open directory.","Error",JOptionPane.ERROR_MESSAGE);
@@ -441,11 +501,5 @@ public class AVFrame extends JFrame {
         add(panelMain, BorderLayout.CENTER);
 
         setVisible(true);
-    }
-}
-
-class Main {
-    public static void main(String[] args) {
-        new AVFrame("Pega-Gato");
     }
 }
