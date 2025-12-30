@@ -2,6 +2,7 @@ package core;
 
 import java.util.*;
 import storage.getdb;
+import java.util.regex.Pattern;
 
 // Extrair e analisar todas as strings do arquivo analisado
 public class StringAnalyzer extends Antivirus {
@@ -38,7 +39,7 @@ public class StringAnalyzer extends Antivirus {
 
 		
 		for (String mw : stringsDb) {
-			if (str.toLowerCase().contains(mw)) { // Verifica se a string contem a string verificada no db
+			if (str.toLowerCase().matches(".*\\b" + Pattern.quote(mw) + "\\b.*")) { // Verifica se a string contem a string verificada no db
 				return true;
 			}
 		}
@@ -50,7 +51,7 @@ public class StringAnalyzer extends Antivirus {
 		byte[] data = Antivirus.fileContent;
 		setExtract(data, 5); // Extrai strings
 		ArrayList<String> strings = getExtract();	// Pega as strings e armazena 
-
+		
 		int ocurrences = 0; // Contador de ocorrencias de strings maliciosas
 							// Ter 1 ou 2 strings suspeitas nao signfica que o arquivo e um malware
 							// por isso o contador
@@ -59,7 +60,8 @@ public class StringAnalyzer extends Antivirus {
 				ocurrences += 1; // Se contem uma string suspeita, adiciona 1 no contador
 			}
 		}
-		if (ocurrences > 100) {
+		System.out.println(ocurrences);
+		if (ocurrences > 50) {
 			return true; 		// Durante alguns testes verifiquei que um binario malicioso costuma ter acima de 100 strins suspeitas
 		}
 		return false; // Se nao for malicioso, retorna false
