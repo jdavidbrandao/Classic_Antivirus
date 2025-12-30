@@ -4,11 +4,35 @@ import java.util.ArrayList;
 import java.io.File;
 import java.nio.file.*;
  
-public class Scanner {
-	private String initFolder; // Pasta inicial -> Onde o scanner vai começar a varredura
+public class Scanner implements Runnable {
+	private String initFolder = "/"; // Pasta inicial -> Onde o scanner vai começar a varredura
 	private ArrayList<String> files = new ArrayList<>(); // ArrayList para armazenar os arquivos encontrados
 	private ArrayList<String> folders = new ArrayList<>(); // ArrayList para armazenar os diretórios encontrados
+	public static boolean detected = false;
+	public static String maliciousPath;
  
+	public void run() {
+		spider();
+		ArrayList<String> f = getFiles();
+		for (String path : f) {
+			try {
+				Antivirus.path.set(path);
+				Antivirus.getFileContent();
+				Antivirus[] scans = Antivirus.getScanM();
+				for (Antivirus s : scans) {
+					if (s.isMalicious() == true) {
+						Scanner.detected = true;
+						Scanner.maliciousPath = path;
+						Thread.currentThread().interrupt();
+					}
+				}
+			} finally {
+				Antivirus.path.remove();
+				Antivirus.fileContent.remove();
+			}
+		}
+	}
+	
 	public Scanner() { // Construtor sem argumentos, inicializa initFolder na pasta raíz
 		initFolder = "/"; 
 	}
@@ -46,4 +70,6 @@ public class Scanner {
 	public ArrayList<String> getFiles() { // Método para retornar o ArrayList com os arquivos encontrados pelo spider
 		return files;
 	}
+	
+	
 }
