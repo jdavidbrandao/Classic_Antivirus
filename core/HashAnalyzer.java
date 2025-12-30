@@ -25,9 +25,9 @@ public class HashAnalyzer extends Antivirus {
 		AddHash geth = new AddHash();
 		ArrayList<String> hashes = new ArrayList<>(); // ArrayList com hashes do arquivo escaneado
 		
-		hashes.add(geth.retornaHash(Antivirus.fileContent, "MD5"));
-		hashes.add(geth.retornaHash(Antivirus.fileContent, "SHA-1"));	// Calcula a hash usando 3 algoritmos distintos
-		hashes.add(geth.retornaHash(Antivirus.fileContent, "SHA-256"));
+		hashes.add(geth.retornaHash(Antivirus.fileContent.get(), "MD5"));
+		hashes.add(geth.retornaHash(Antivirus.fileContent.get(), "SHA-1"));	// Calcula a hash usando 3 algoritmos distintos
+		hashes.add(geth.retornaHash(Antivirus.fileContent.get(), "SHA-256"));
 		
 		Boolean isMal = false;
 		for (String hash : hashes) {
