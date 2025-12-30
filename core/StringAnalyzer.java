@@ -48,10 +48,11 @@ public class StringAnalyzer extends Antivirus {
 	}
 	
 	public boolean isMalicious() {
-		byte[] data = Antivirus.fileContent;
+		byte[] data = Antivirus.fileContent.get();
 		setExtract(data, 5); // Extrai strings
 		ArrayList<String> strings = getExtract();	// Pega as strings e armazena 
 		
+
 		int ocurrences = 0; // Contador de ocorrencias de strings maliciosas
 							// Ter 1 ou 2 strings suspeitas nao signfica que o arquivo e um malware
 							// por isso o contador
@@ -60,7 +61,7 @@ public class StringAnalyzer extends Antivirus {
 				ocurrences += 1; // Se contem uma string suspeita, adiciona 1 no contador
 			}
 		}
-		System.out.println(ocurrences);
+
 		if (ocurrences > 50) {
 			return true; 		// Durante alguns testes verifiquei que um binario malicioso costuma ter acima de 100 strins suspeitas
 		}
