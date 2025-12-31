@@ -54,7 +54,7 @@ public class AVFrame extends JFrame {
 		    	Antivirus[] scanner = new Antivirus[3];
 		    	scanner[0] = new HashAnalyzer();
 		    	scanner[1] = new SignatureAnalyzer();
-		    	scanner[2] = new StringAnalyzer();
+		    	scanner[2] = new HeuristicsAnalyzer();
 		    	
 		    	if (scanner[0].isMalicious()) {
 		    		result.add(true);
