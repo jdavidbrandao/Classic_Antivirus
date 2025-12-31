@@ -2,6 +2,8 @@ package core;
  
 import java.util.ArrayList;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.*;
  
 public class Scanner implements Runnable {
@@ -40,6 +42,42 @@ public class Scanner implements Runnable {
 	public Scanner(String initFolder) { // Sobrecarga do construtor, nesse caso a pasta inicial é outra pre-definida pelo usuário
 		this.initFolder = initFolder;
 	}
+	
+	public static boolean isELF(Path path) {
+	    byte[] magic = new byte[4];
+	    try (InputStream is = Files.newInputStream(path)) {
+	        if (is.read(magic) != 4) return false;
+	    } catch (IOException e) {
+			return false;
+		}
+	    return magic[0] == 0x7F &&
+	           magic[1] == 'E' &&
+	           magic[2] == 'L' &&
+	           magic[3] == 'F';
+	}
+	
+	public boolean isScannable(String path) {
+		int score = 0;
+		String[] sensitiveDirs = {"/tmp", "/var/tmp", "/home/kali", ".config", "/usr/share/backgrounds"};
+		for (String sd : sensitiveDirs) {
+			if (path.contains(sd)) {
+				score++;
+				break;
+			}
+		}
+		Path p = Paths.get(path);
+		if (isELF(p)) {
+			if (Files.isExecutable(p)) {
+				score++;
+			}
+			score++;
+		}
+		if (score >= 2) {
+			return true;
+		}
+		return false;
+		
+	}
  
 	public void spider(String folder) { // Método spider, vai partir da pasta passada pelo usuário e vai varrer tudo que ele encontrar
 		File diretorio = new File(folder);
@@ -53,7 +91,7 @@ public class Scanner implements Runnable {
 					spider(arquivo.getAbsolutePath()); // Se o "arquivo" do diretório listado for um diretório, escanea também o que tem dentro dele
 					continue;						   // recursivamente.
 				}
-				else if(arquivo.isFile() && !files.contains(arquivo.getAbsolutePath())) {
+				else if(arquivo.isFile() && !files.contains(arquivo.getAbsolutePath()) && isScannable(arquivo.getAbsolutePath())) {
 					System.out.println("Arquivo: " + arquivo.getAbsolutePath());
 					files.add(arquivo.getAbsolutePath()); // Se for apenas um arquivo, salva ele no ArrayList
 					continue;
