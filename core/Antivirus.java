@@ -22,7 +22,7 @@ public abstract class Antivirus {
 		Antivirus[] methods = new Antivirus[3];
 		methods[0] = new HashAnalyzer();
 		methods[1] = new SignatureAnalyzer();
-		methods[2] = new StringAnalyzer();
+		methods[2] = new HeuristicsAnalyzer();
 		return methods;
 	}
 	
