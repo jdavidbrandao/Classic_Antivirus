@@ -4,8 +4,8 @@ import java.util.*;
 import storage.getdb;
 import java.util.regex.Pattern;
 
-// Extrair e analisar todas as strings do arquivo analisado
-public class StringAnalyzer extends Antivirus {
+// Executar uma sequencia de heuristicas do arquivo analisado
+public class HeuristicsAnalyzer extends Antivirus {
 	private ArrayList<String> extract = new ArrayList<>(); //Atributo encapsulado, contem as strings extraidas
 	
 	public void setExtract(byte[] data, int minLength){ // set (encapsulamento)
@@ -47,25 +47,79 @@ public class StringAnalyzer extends Antivirus {
 		
 	}
 	
-	public boolean isMalicious() {
+	public int StringAnalyzer() {
 		byte[] data = Antivirus.fileContent.get();
 		setExtract(data, 5); // Extrai strings
 		ArrayList<String> strings = getExtract();	// Pega as strings e armazena 
-		
+		ArrayList<String> alreadySeen = new ArrayList<>();
 
 		int ocurrences = 0; // Contador de ocorrencias de strings maliciosas
 							// Ter 1 ou 2 strings suspeitas nao signfica que o arquivo e um malware
 							// por isso o contador
 		for (String test : strings) {
-			if (isStringMalicious(test) == true) {
+			if (!alreadySeen.contains(test) && isStringMalicious(test) == true) {
+				alreadySeen.add(test);
 				ocurrences += 1; // Se contem uma string suspeita, adiciona 1 no contador
 			}
 		}
 
-		if (ocurrences > 50) {
-			return true; 		// Durante alguns testes verifiquei que um binario malicioso costuma ter acima de 100 strins suspeitas
+		if (ocurrences >= 10) {
+			return 10; 		// Durante alguns testes verifiquei que um binario malicioso costuma ter acima de 100 strins suspeitas
+		} else if (ocurrences >= 3) {
+			return 7; // Se nao for malicioso, retorna false
 		}
-		return false; // Se nao for malicioso, retorna false
+		return 1;
 	}
 	
+	public int ShellAnalyzer() {
+		ArrayList<String> s = extract;
+		
+		for (String st : s) {
+			if (st.contains("/bin/sh") || st.contains("/bin/bash")) {
+				return 4;
+			}
+		}
+		return 0;
+	}
+	
+	public int NetworkAnalyzer() {
+		String s = new String(Antivirus.fileContent.get());
+		int score = 0;
+		
+		if (s.toLowerCase().contains("af_inet")) score++;
+		if (s.toLowerCase().contains("sock_stream")) score++;
+		if (s.toLowerCase().contains("htons")) score++;
+		if (s.toLowerCase().contains("inet_addr")) score++;
+		if (s.toLowerCase().contains("socket")) score++;
+		if (s.toLowerCase().contains("send")) score++;
+		
+		return score;
+	}
+	
+	public int DupAnalyzer() {
+		String s = new String(Antivirus.fileContent.get());
+		int score = 0;
+		if (s.toLowerCase().contains("dup2(")) score++;
+		
+		if (score >= 2) return 3;
+		if (score == 1) return 1;
+		return 0;
+	}
+		
+	public boolean isMalicious() {
+		int HeuristicScore = 0;
+		
+		HeuristicScore += StringAnalyzer();
+		HeuristicScore += ShellAnalyzer();
+		HeuristicScore += NetworkAnalyzer();
+		HeuristicScore += DupAnalyzer();
+		
+		System.out.println(HeuristicScore);
+		
+		if (HeuristicScore >= 11) {
+			return true;
+		}
+		return false;
+
+	}
 }
