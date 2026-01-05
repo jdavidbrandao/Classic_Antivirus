@@ -5,7 +5,9 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+// Classe que o AVFrame vai manipular para deteccao
 public class DoScan {
+	
     public static ArrayList<Object> scanComputer() {
     	ArrayList<Object> result = new ArrayList<>();
     	Thread t = new Thread(new Scanner());
