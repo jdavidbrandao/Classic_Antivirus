@@ -1,0 +1,16 @@
+# Eclipse
+.project
+.classpath
+.settings/
+
+# Java
+bin/
+out/
+*.class
+
+# Arquivos temporários / sistema
+.DS_Store
+*.log
+
+# JARs externos (opcional, se não quer subir)
+*.jar
