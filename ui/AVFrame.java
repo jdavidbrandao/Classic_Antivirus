@@ -3,80 +3,19 @@ package ui;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
+import core.DoScan;
+
 import core.*;
 
+@SuppressWarnings("serial")
 public class AVFrame extends JFrame {
 
-    // Destaque seleção de botão
+    // Destaque seleção de  botão
     private JButton selectedButton = null;
 
     
-    private ArrayList<Object> scanComputer() {
-    	ArrayList<Object> result = new ArrayList<>();
-    	Thread t = new Thread(new Scanner());
-    	t.run();
-    	if (Scanner.detected) {
-    		result.add(true);
-    		result.add(Scanner.maliciousPath);
-    	} else {
-    		result.add(false);
-    		result.add(Scanner.maliciousPath);
-    	}
-    	return result;
-    }
-    
-    private boolean removeFile(String path) {
-    	File arquivo = new File(path);
-    	arquivo.delete();
-		if (arquivo.exists()) {
-			return false;
-		}
-		return true;
-    }
-    
-    private ArrayList<Object> scanFolder(File dir) {
-    	File[] arquivos = dir.listFiles();
-    	ArrayList<Object> result = new ArrayList<>();
-    	
-    	for (File arquivo : arquivos) {
-    		if (Files.isSymbolicLink(arquivo.toPath())) {
-    			continue;
-    		}
-	    	
-    		else if (arquivo.isFile()) {
-		    	Antivirus.path.set(arquivo.getAbsolutePath());
-		    	Antivirus.getFileContent();
-		    	
-		    	Antivirus[] scanner = new Antivirus[3];
-		    	scanner[0] = new HashAnalyzer();
-		    	scanner[1] = new SignatureAnalyzer();
-		    	scanner[2] = new HeuristicsAnalyzer();
-		    	
-		    	if (scanner[0].isMalicious()) {
-		    		result.add(true);
-		    		result.add(arquivo.getAbsolutePath());
-		    		return result;
-		    	} else if (scanner[1].isMalicious()) {
-		    		result.add(true);
-		    		result.add(arquivo.getAbsolutePath());
-		    		return result;
-		    	}
-		    	if (scanner[2].isMalicious()) {
-		    		result.add(true);
-		    		result.add(arquivo.getAbsolutePath());
-		    		return result;
-		    	}
-		    	continue;
-    		}
-    	}
-    	result.add(false);
-    	result.add(null);
-    	return result;
-    }
     
     private void selectMenuButton(JButton button) {
         if (selectedButton != null) {
@@ -121,7 +60,7 @@ public class AVFrame extends JFrame {
         super(nome);
 
         setSize(800, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        // setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
         // Lateral Opções
@@ -206,10 +145,10 @@ public class AVFrame extends JFrame {
         scan.setBackground(Color.WHITE);
         scan.addActionListener(e -> {
             JOptionPane.showMessageDialog(this,"Verifying files...\nPlease wait.","Verifying",JOptionPane.INFORMATION_MESSAGE);
-            ArrayList<Object> threatFound = scanComputer();
+            ArrayList<Object> threatFound = DoScan.scanComputer();
             if ((Boolean) threatFound.get(0)){
                 JOptionPane.showMessageDialog(this,"Threat detected!\nA malicious file was found: " + (String) threatFound.get(1),"Threat Detected",JOptionPane.ERROR_MESSAGE);
-                boolean success = removeFile((String) threatFound.get(1));
+                boolean success = DoScan.removeFile((String) threatFound.get(1));
                 if (success) {
                 	JOptionPane.showMessageDialog(this,"Threat killed.\nYour system is safe.", "Your system is safe",JOptionPane.PLAIN_MESSAGE);
                 } else {
@@ -239,26 +178,39 @@ public class AVFrame extends JFrame {
 
             File folder = chooser.getSelectedFile();
 
-            JOptionPane.showMessageDialog(this,"Verifying files...\nPlease wait.","Verifying",JOptionPane.INFORMATION_MESSAGE);
+            //JOptionPane.showMessageDialog(this,"Verifying files...\nPlease wait.","Verifying",JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane pane = new JOptionPane("Verifying files...\nPlease wait.", JOptionPane.INFORMATION_MESSAGE);
+            pane.setOptions(new Object[]{});
+            
+            JDialog dialog = pane.createDialog(this, "Verifying");
+            dialog.setModal(false);
+            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 
-            ArrayList<Object> threatFound = scanFolder(folder);
+            dialog.setVisible(true);
 
-            if ((Boolean) threatFound.get(0)){
-                JOptionPane.showMessageDialog(this,"Threat detected!\nLocation: " + threatFound.get(1) + "\nA malicious file was found.","Threat Detected",JOptionPane.ERROR_MESSAGE);
-                try{
-                    boolean neutralize = removeFile((String) threatFound.get(1));
-                    if (neutralize == false) {
-                    	JOptionPane.showMessageDialog(this,"Unable to remove the malicious file.","Access Denied Error",JOptionPane.ERROR_MESSAGE);
-                    } else {
-                    	JOptionPane.showMessageDialog(this,"Threat neutralized!","Success",JOptionPane.PLAIN_MESSAGE);
-                    }
-                }catch (Exception ex){
-                    ex.printStackTrace();
-                    JOptionPane.showMessageDialog(this,"Unable to open directory.","Error",JOptionPane.ERROR_MESSAGE);
-                }
-            }else{
+            HashMap<Integer, String> threatFound = DoScan.scanFolder(folder);
+
+            if (threatFound.size() > 0) {
+	            for (Integer indice : threatFound.keySet()){
+	                JOptionPane.showMessageDialog(this,"Threat detected!\nLocation: " + threatFound.get(indice) + "\nA malicious file was found.","Threat Detected",JOptionPane.ERROR_MESSAGE);
+	            }
+	            for (Integer indice : threatFound.keySet()) {
+		            try {
+		                boolean neutralize = DoScan.removeFile((String) threatFound.get(indice));
+		                if (neutralize == false) {
+		                	JOptionPane.showMessageDialog(this,"Unable to remove the malicious file.","Access Denied Error",JOptionPane.ERROR_MESSAGE);
+		                } else {
+		                	JOptionPane.showMessageDialog(this,"Threat neutralized!","Success",JOptionPane.PLAIN_MESSAGE);
+		                }
+		                continue;
+		            }catch (Exception ex) {
+		                JOptionPane.showMessageDialog(this,"Unable to open directory.","Error",JOptionPane.ERROR_MESSAGE);
+		            }
+	            }
+            } else{
                 JOptionPane.showMessageDialog(this, "No threats detected.\nYour system is safe.", "No Threat Detected",JOptionPane.PLAIN_MESSAGE);
             }
+            dialog.dispose();
         });
 
         dir.setBackground(Color.WHITE);
