@@ -1,12 +1,12 @@
 package ui;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import core.DoScan;
-
 import core.*;
 
 @SuppressWarnings("serial")
@@ -14,9 +14,6 @@ public class AVFrame extends JFrame {
 
     // Destaque seleção de  botão
     private JButton selectedButton = null;
-
-    
-    
     private void selectMenuButton(JButton button) {
         if (selectedButton != null) {
             selectedButton.setBackground(Color.WHITE);
@@ -53,15 +50,22 @@ public class AVFrame extends JFrame {
         return sep;
     }
 
+    private void addThreat(DefaultTableModel model, String path, String date) {
+            if (model.getRowCount() >= 50) {
+                model.removeRow(0);
+            }
+            model.addRow(new Object[]{path, date});
+    }
+
     // Janela
     // ======================================================================
     AVFrame(String nome) {
 
         super(nome);
-
-        setSize(800, 600);
+        setSize(800, 610);
         // setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        setResizable(false);
 
         // Lateral Opções
         // ======================================================================
@@ -94,7 +98,7 @@ public class AVFrame extends JFrame {
         selectMenuButton(bl1);
 
         ImageIcon icon1 = new ImageIcon(
-            getClass().getResource("/ui/resource/icon4.png")
+            getClass().getResource("/ui/resource/icon1.png")
         );
         bl1.setIcon(icon1);
 
@@ -126,6 +130,20 @@ public class AVFrame extends JFrame {
         );
         bl3.setIcon(icon3);
 
+        JButton bl4 = new JButton("Quarantine");
+        bl4.setFont(menuFont);
+        bl4.setVerticalTextPosition(SwingConstants.BOTTOM);
+        bl4.setHorizontalTextPosition(SwingConstants.CENTER);
+        bl4.setBackground(Color.WHITE);
+        bl4.setOpaque(true);
+        bl4.setBorderPainted(false);
+        bl4.setFocusPainted(false);
+
+        ImageIcon icon4 = new ImageIcon(
+            getClass().getResource("/ui/resource/icon4.png")
+        );
+        bl4.setIcon(icon4);
+
         JButton about = new JButton("About");
         about.setFont(menuFont);
         about.setVerticalTextPosition(SwingConstants.BOTTOM);
@@ -135,10 +153,10 @@ public class AVFrame extends JFrame {
         about.setBorderPainted(false);
         about.setFocusPainted(false);
 
-        ImageIcon icon4 = new ImageIcon(
-            getClass().getResource("/ui/resource/icon4.png")
+        ImageIcon icon5 = new ImageIcon(
+            getClass().getResource("/ui/resource/icon5.png")
         );
-        about.setIcon(icon4);
+        about.setIcon(icon5);
 
         JButton scan = new JButton("Scan my Computer");
         scan.setFont(menuFont);
@@ -185,7 +203,6 @@ public class AVFrame extends JFrame {
             JDialog dialog = pane.createDialog(this, "Verifying");
             dialog.setModal(false);
             dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-
             dialog.setVisible(true);
 
             HashMap<Integer, String> threatFound = DoScan.scanFolder(folder);
@@ -253,12 +270,7 @@ public class AVFrame extends JFrame {
 
                 // Verifica se pelo menos um checkbox está selecionado
                 if (!temp.isSelected() && !downloads.isSelected() && !desktop.isSelected()) {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        "Selecione pelo menos um diretório.",
-                        "Aviso",
-                        JOptionPane.WARNING_MESSAGE
-                    );
+                    JOptionPane.showMessageDialog(this, "Select at least one directory.", "Warning", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
 
@@ -268,19 +280,19 @@ public class AVFrame extends JFrame {
 
                 // Exemplo de uso
                 if (temp.isSelected()) {
-                	Thread t1 = new Thread(new RealTimeAnalyzer("/tmp"));
+                	Thread t1 = new Thread(new RealTimeAnalyzer("G:\\Curse"));
                 	t1.start();
                 	threads[0] = t1;
                     System.out.println("Monitorando TEMP");
                 }
                 if (downloads.isSelected()) {
-                	Thread t2 = new Thread(new RealTimeAnalyzer("/home/kali/Downloads"));
+                	Thread t2 = new Thread(new RealTimeAnalyzer("G:\\Curse"));
                 	t2.start();
                 	threads[1] = t2;
                     System.out.println("Monitorando DOWNLOADS");
                 }
                 if (desktop.isSelected()) {
-                	Thread t3 = new Thread(new RealTimeAnalyzer("/home/kali/Desktop"));
+                	Thread t3 = new Thread(new RealTimeAnalyzer("G:\\Curse"));
                 	t3.start();
                 	threads[2] = t3;
                     System.out.println("Monitorando DESKTOP");
@@ -299,22 +311,27 @@ public class AVFrame extends JFrame {
         });
 
 
+
+
         // Tamanho dos botões
         Dimension blSize = new Dimension(160, 100);
 
         bl1.setMaximumSize(blSize);
         bl2.setMaximumSize(blSize);
         bl3.setMaximumSize(blSize);
+        bl4.setMaximumSize(blSize);
         about.setMaximumSize(blSize);
 
         bl1.setPreferredSize(blSize);
         bl2.setPreferredSize(blSize);
         bl3.setPreferredSize(blSize);
+        bl4.setPreferredSize(blSize);
         about.setPreferredSize(blSize);
 
         bl1.setAlignmentX(Component.LEFT_ALIGNMENT);
         bl2.setAlignmentX(Component.LEFT_ALIGNMENT);
         bl3.setAlignmentX(Component.LEFT_ALIGNMENT);
+        bl4.setAlignmentX(Component.LEFT_ALIGNMENT);
         about.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Espaçamento e adicionando os botões ao Panel auxiliar
@@ -330,6 +347,10 @@ public class AVFrame extends JFrame {
         listTop.add(Box.createVerticalStrut(10));
         listTop.add(createSeparator());
         listTop.add(bl3);
+        listTop.add(createSeparator());
+        listTop.add(Box.createVerticalStrut(10));
+        listTop.add(createSeparator());
+        listTop.add(bl4);
         listTop.add(createSeparator());
         listTop.add(Box.createVerticalStrut(10));
         listTop.add(createSeparator());
@@ -429,24 +450,104 @@ public class AVFrame extends JFrame {
 
         t3.add(centerPanel3, BorderLayout.CENTER);
 
+        // ================= TELA 4 =================
+        JPanel t4 = new JPanel();
+        t4.setLayout(new BorderLayout());
+        t4.add(createHeader("Quarantine"), BorderLayout.NORTH);
+
+        String[] columns = {"File Location", "Date"};
+        DefaultTableModel quarantineModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; 
+            }   
+        };
+
+        JTable quarantineTable = new JTable(quarantineModel);
+        quarantineTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        quarantineTable.setRowHeight(22);
+        quarantineTable.getTableHeader().setReorderingAllowed(false);
+
+        JScrollPane scroll = new JScrollPane(quarantineTable);
+        scroll.setPreferredSize(new Dimension(500, 0));
+
+        JPanel actions = new JPanel();
+        actions.setLayout(new BoxLayout(actions, BoxLayout.Y_AXIS));
+        actions.setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
+
+        Dimension btnSize = new Dimension(160, 40);
+        JButton deleteBtn = new JButton("Delete");
+        deleteBtn.setFont(menuFont);
+        deleteBtn.setBackground(Color.WHITE);
+        deleteBtn.setFocusPainted(false);
+        deleteBtn.setOpaque(true);
+        deleteBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        deleteBtn.setPreferredSize(btnSize);
+        deleteBtn.setMaximumSize(btnSize);
+        deleteBtn.setMinimumSize(btnSize);
+        deleteBtn.addActionListener(e -> {
+        int row = quarantineTable.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "Select a threat first.",  "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        String path = (String) quarantineModel.getValueAt(row, 0);
+
+          //DELETA ARQUIVO AQUI
+
+        quarantineModel.removeRow(row);
+        });
+
+        JButton restoreBtn = new JButton("Restore");
+        restoreBtn.setFont(menuFont);
+        restoreBtn.setBackground(Color.WHITE);
+        restoreBtn.setFocusPainted(false);
+        restoreBtn.setOpaque(true);
+        restoreBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        restoreBtn.setPreferredSize(btnSize);
+        restoreBtn.setMaximumSize(btnSize);
+        restoreBtn.setMinimumSize(btnSize);
+        restoreBtn.addActionListener(e -> {
+        int row = quarantineTable.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Select a threat first.",  "Warning", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String path = (String) quarantineModel.getValueAt(row, 0);
+
+        //RESTAURA AQUI
+
+        quarantineModel.removeRow(row);
+        });
+
+        actions.add(deleteBtn);
+        actions.add(Box.createVerticalStrut(5));
+        actions.add(restoreBtn);
+
+        JPanel center = new JPanel(new BorderLayout());
+        center.add(scroll, BorderLayout.CENTER);
+        center.add(actions, BorderLayout.EAST);
+
+        t4.add(center, BorderLayout.CENTER);
+
         // ================= ABOUT =================
         JPanel tAbout = new JPanel();
         tAbout.setLayout(new BorderLayout());
         tAbout.add(createHeader("About"), BorderLayout.NORTH);
 
-        ImageIcon icon4p = new ImageIcon(
-            getClass().getResource("/ui/resource/icon4p.png")
+        ImageIcon icon5p = new ImageIcon(
+            getClass().getResource("/ui/resource/icon5p.png")
         );
 
-        JLabel iconLabel4 = new JLabel(icon4p);
-        iconLabel4.setHorizontalAlignment(SwingConstants.CENTER);
-        iconLabel4.setVerticalAlignment(SwingConstants.TOP);
-        iconLabel4.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel iconLabel5 = new JLabel(icon5p);
+        iconLabel5.setHorizontalAlignment(SwingConstants.CENTER);
+        iconLabel5.setVerticalAlignment(SwingConstants.TOP);
+        iconLabel5.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JPanel contentWrapper = new JPanel(new BorderLayout());
         contentWrapper.setOpaque(false);
         contentWrapper.setBorder(
-            BorderFactory.createEmptyBorder(0, 20, 0, 0)
+        BorderFactory.createEmptyBorder(0, 20, 0, 0)
         );
 
         JLabel aboutText = new JLabel(
@@ -462,6 +563,9 @@ public class AVFrame extends JFrame {
             "<h3>Real Time Analyzer</h3>" +
             "<p>Monitors the system in real time, analyzing changes in the selected folders.</p>" +
 
+            "<h3>Quarantine</h3>" +
+            "<p>Threats are moved to quarantine and user have to decide their destiny.</p>" +
+
         "</div>" +
         "</html>"
         );
@@ -472,7 +576,7 @@ public class AVFrame extends JFrame {
         centerPanel4.setLayout(new BoxLayout(centerPanel4, BoxLayout.Y_AXIS));
         centerPanel4.setOpaque(false);
         centerPanel4.add(Box.createVerticalStrut(30));
-        centerPanel4.add(iconLabel4);
+        centerPanel4.add(iconLabel5);
         centerPanel4.add(Box.createVerticalStrut(25));
         centerPanel4.add(aboutText);
 
@@ -495,6 +599,11 @@ public class AVFrame extends JFrame {
             selectMenuButton(bl3);
         });
 
+        bl4.addActionListener(e -> {
+            cardLayout.show(panelMain, "T4");
+            selectMenuButton(bl4);
+        });
+
         about.addActionListener(e -> {
             cardLayout.show(panelMain, "ABOUT");
             selectMenuButton(about);
@@ -504,6 +613,7 @@ public class AVFrame extends JFrame {
         panelMain.add(t1, "T1");
         panelMain.add(t2, "T2");
         panelMain.add(t3, "T3");
+        panelMain.add(t4, "T4");
         panelMain.add(tAbout, "ABOUT");
 
         // Adicionar na Janela
