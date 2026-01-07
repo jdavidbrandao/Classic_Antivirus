@@ -114,8 +114,6 @@ public class HeuristicsAnalyzer extends Antivirus {
 		HeuristicScore += NetworkAnalyzer();
 		HeuristicScore += DupAnalyzer();
 		
-		System.out.println(HeuristicScore);
-		
 		if (HeuristicScore >= 11) {
 			return true;
 		}

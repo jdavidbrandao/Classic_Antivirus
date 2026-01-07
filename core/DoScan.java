@@ -8,17 +8,12 @@ import java.util.HashMap;
 // Classe que o AVFrame vai manipular para deteccao
 public class DoScan {
 	
-    public static ArrayList<Object> scanComputer() {
-    	ArrayList<Object> result = new ArrayList<>();
-    	Thread t = new Thread(new Scanner());
-    	t.run();
-    	if (Scanner.detected) {
-    		result.add(true);
-    		result.add(Scanner.maliciousPath);
-    	} else {
-    		result.add(false);
-    		result.add(Scanner.maliciousPath);
-    	}
+    public static ArrayList<String> scanComputer() {
+    	ArrayList<String> result = new ArrayList<>();
+    	
+    	Scanner sc = new Scanner();
+    	result = sc.getFiles();
+    	
     	return result;
     }
     
