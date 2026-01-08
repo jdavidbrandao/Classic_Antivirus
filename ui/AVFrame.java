@@ -193,55 +193,88 @@ public class AVFrame extends JFrame implements ThreatListener {
         scan.setFont(menuFont);
         scan.setBackground(Color.WHITE);
         scan.addActionListener(e -> {
-        	JOptionPane.showMessageDialog(this,"Verifying files...\nPlease wait.","Verifying",JOptionPane.INFORMATION_MESSAGE);
-        	SwingWorker<ArrayList<String>, Void> worker = new SwingWorker<>() {
-	            
-        		@Override
-        		protected ArrayList<String> doInBackground() {
-        			return DoScan.scanComputer();
-        		}
-        		
-        		@Override
-        		protected void done() {
-        			try {
-			            ArrayList<String> threatFound = get();
-			            
-			            
-			            if (threatFound.size() == 0){
-			                JOptionPane.showMessageDialog(null,
-			                		"No threats detected.\nYour system is safe.",
-			                		"No Threat Detected",
-			                		JOptionPane.PLAIN_MESSAGE);
-			            }
-			            
-			            for (String threat : threatFound){
-			                JOptionPane.showMessageDialog(null,
-			                		"Threat detected!\nA malicious file was found: " + threat,
-			                		"Threat Detected",
-			                		JOptionPane.ERROR_MESSAGE);
-			                
-			                addThreat(threat, LocalDateTime.now().toString());
-			
-			                JOptionPane.showMessageDialog(null,
-			                		"Threat moved to Quarentine.\nYour system is safe.",
-			                		"Your system is safe",
-			                		JOptionPane.PLAIN_MESSAGE);
-			
-			            }
-			            
-        			} catch (Exception ex) {
+
+            // 🔹 Janela de logs
+            ScanWindow logWindow = new ScanWindow();
+            logWindow.setVisible(true);
+
+            // 🔹 Alerta inicial (mantido)
+            JOptionPane pane = new JOptionPane("Verifying files...\nPlease wait.", JOptionPane.INFORMATION_MESSAGE);
+            pane.setOptions(new Object[]{});
+            
+            JDialog dialog = pane.createDialog(this, "Verifying");
+            dialog.setModal(false);
+            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+            dialog.setVisible(true);
+
+            SwingWorker<ArrayList<String>, String> worker =
+                new SwingWorker<>() {
+
+                @Override
+                protected ArrayList<String> doInBackground() {
+
+                    // Logs em tempo real
+                    return DoScan.scanComputer(msg -> publish(msg));
+                }
+
+                @Override
+                protected void process(java.util.List<String> logs) {
+                    for (String log : logs) {
+                        logWindow.log(log);
+                    }
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                    	dialog.dispose();
+                        ArrayList<String> threatFound = get();
+
+                        // 🔹 Log final
+                        logWindow.log("\nScan finished.");
+
+                        // 🔹 ALERTAS ORIGINAIS (mantidos)
+                        if (threatFound.size() == 0) {
+                            JOptionPane.showMessageDialog(
+                                null,
+                                "No threats detected.\nYour system is safe.",
+                                "No Threat Detected",
+                                JOptionPane.PLAIN_MESSAGE
+                            );
+                        }
+
+                        for (String threat : threatFound) {
+
+                            JOptionPane.showMessageDialog(
+                                null,
+                                "Threat detected!\nA malicious file was found: " + threat,
+                                "Threat Detected",
+                                JOptionPane.ERROR_MESSAGE
+                            );
+
+                            addThreat(threat, LocalDateTime.now().toString());
+
+                            JOptionPane.showMessageDialog(
+                                null,
+                                "Threat moved to Quarantine.\nYour system is safe.",
+                                "Your system is safe",
+                                JOptionPane.PLAIN_MESSAGE
+                            );
+                        }
+
+                    } catch (Exception ex) {
+                    	System.out.println(ex);
                         JOptionPane.showMessageDialog(
                             null,
                             "An error occurred during scanning.",
                             "Error",
                             JOptionPane.ERROR_MESSAGE
                         );
-        			}
-        		}
-        	}; 
-        	
-        	worker.execute();
-        	
+                    }
+                }
+            };
+
+            worker.execute();
         });
         scan.setFocusPainted(false);
         scan.setOpaque(true);
@@ -260,39 +293,79 @@ public class AVFrame extends JFrame implements ThreatListener {
             if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
                 return;
             }
+            
+            JOptionPane pane2 = new JOptionPane("Verifying files...\nPlease wait.", JOptionPane.INFORMATION_MESSAGE);
+            pane2.setOptions(new Object[]{});
+            
+            JDialog dialog2 = pane2.createDialog(this, "Verifying");
+            dialog2.setModal(false);
+            dialog2.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+            dialog2.setVisible(true);
 
             File folder = chooser.getSelectedFile();
 
-            //JOptionPane.showMessageDialog(this,"Verifying files...\nPlease wait.","Verifying",JOptionPane.INFORMATION_MESSAGE);
-            JOptionPane pane = new JOptionPane("Verifying files...\nPlease wait.", JOptionPane.INFORMATION_MESSAGE);
-            pane.setOptions(new Object[]{});
-            
-            JDialog dialog = pane.createDialog(this, "Verifying");
-            dialog.setModal(false);
-            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-            dialog.setVisible(true);
 
-            HashMap<Integer, String> threatFound = DoScan.scanFolder(folder);
+            dialog2.setVisible(true);
 
-            if (threatFound.size() > 0) {
-	            for (Integer indice : threatFound.keySet()){
-	                JOptionPane.showMessageDialog(this,"Threat detected!\nLocation: " + threatFound.get(indice) + "\nA malicious file was found.","Threat Detected",JOptionPane.ERROR_MESSAGE);
-	            }
-	            for (Integer indice : threatFound.keySet()) {
-		            try {
-		            	addThreat((String)threatFound.get(indice), LocalDateTime.now().toString());
+            SwingWorker<HashMap<Integer, String>, Void> worker =
+                    new SwingWorker<>() {
 
-		                JOptionPane.showMessageDialog(this,"Threat moved to Quarentine!","Success",JOptionPane.PLAIN_MESSAGE);
-		                
-		                continue;
-		            }catch (Exception ex) {
-		                JOptionPane.showMessageDialog(this,"Unable to open directory.","Error",JOptionPane.ERROR_MESSAGE);
-		            }
-	            }
-            } else{
-                JOptionPane.showMessageDialog(this, "No threats detected.\nYour system is safe.", "No Threat Detected",JOptionPane.PLAIN_MESSAGE);
-            }
-            dialog.dispose();
+                @Override
+                protected HashMap<Integer, String> doInBackground() {
+                    return DoScan.scanFolder(folder);
+                }
+
+                @Override
+                protected void done() {
+                    dialog2.dispose();
+
+                    try {
+                        HashMap<Integer, String> threatFound = get();
+
+                        if (!threatFound.isEmpty()) {
+                            for (Integer indice : threatFound.keySet()) {
+                                JOptionPane.showMessageDialog(
+                                        null,
+                                        "Threat detected!\nLocation: " + threatFound.get(indice)
+                                                + "\nA malicious file was found.",
+                                        "Threat Detected",
+                                        JOptionPane.ERROR_MESSAGE
+                                );
+                            }
+
+                            for (Integer indice : threatFound.keySet()) {
+                                try {
+                                    addThreat(threatFound.get(indice), LocalDateTime.now().toString());
+                                    JOptionPane.showMessageDialog(
+                                            null,
+                                            "Threat moved to Quarantine!",
+                                            "Success",
+                                            JOptionPane.PLAIN_MESSAGE
+                                    );
+                                } catch (Exception ex) {
+                                    JOptionPane.showMessageDialog(
+                                            null,
+                                            "Unable to open directory.",
+                                            "Error",
+                                            JOptionPane.ERROR_MESSAGE
+                                    );
+                                }
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(
+                                    null,
+                                    "No threats detected.\nYour system is safe.",
+                                    "No Threat Detected",
+                                    JOptionPane.PLAIN_MESSAGE
+                            );
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            };
+
+            worker.execute();
         });
 
         dir.setBackground(Color.WHITE);
