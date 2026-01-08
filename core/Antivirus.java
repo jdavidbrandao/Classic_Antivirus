@@ -26,5 +26,14 @@ public abstract class Antivirus {
 		return methods;
 	}
 	
-	public abstract boolean isMalicious(); // Metodo que deve ser implementado nas classes filhas
+	public boolean isMalicious() { // Metodo que deve ser implementado nas classes filhas
+		Antivirus[] scm = Antivirus.getScanM();
+		
+		for (Antivirus sc : scm) {
+			if (sc.isMalicious()) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

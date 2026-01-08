@@ -9,7 +9,7 @@ public class Scanner {
     private String initFolder;
     private ArrayList<String> files = new ArrayList<>();
     private ArrayList<String> folders = new ArrayList<>();
-    private ScanLogger logger; // ✅ callback, não UI
+    private ScanLogger logger; 
 
     public Scanner() {
         initFolder = Paths.get("/home", "kali", "Desktop").toString();
@@ -31,7 +31,7 @@ public class Scanner {
         }
     }
 
-    public void spider(String folder) {
+    private void spider(String folder) {
         File diretorio = new File(folder);
         File[] arquivos = diretorio.listFiles();
 
@@ -72,12 +72,15 @@ public class Scanner {
         }
     }
 
-    public void spider() {
+    private void spider() {
         spider(initFolder);
     }
 
     public ArrayList<String> getFiles() {
-        spider();
         return files;
+    }
+    
+    public void setFiles() {
+    	spider();
     }
 }

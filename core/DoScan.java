@@ -10,6 +10,7 @@ public class DoScan {
     // MÉTODO ORIGINAL (fica igual)
     public static ArrayList<String> scanComputer() {
         Scanner sc = new Scanner();
+        sc.setFiles();
         return sc.getFiles();
     }
 
