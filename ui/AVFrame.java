@@ -18,7 +18,7 @@ public class AVFrame extends JFrame implements ThreatListener {
 	
 	private DefaultTableModel quarantineModel;
 
-    // Destaque seleção de  botão
+    // Destaque seleção de botão do menu
     private JButton selectedButton = null;
     private void selectMenuButton(JButton button) {
         if (selectedButton != null) {
@@ -81,17 +81,15 @@ public class AVFrame extends JFrame implements ThreatListener {
 
 
     // Janela
-    // ======================================================================
     AVFrame(String nome) {
-    	
         super(nome);
         setSize(800, 610);
-        // setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         setResizable(false);
 
+    // =============================================End===============================================
+
         // Lateral Opções
-        // ======================================================================
         JPanel list = new JPanel();
         list.setBackground(Color.DARK_GRAY);
         list.setLayout(new BorderLayout());
@@ -102,6 +100,8 @@ public class AVFrame extends JFrame implements ThreatListener {
             BorderFactory.createEmptyBorder(0, 0, 0, 0)
             )
         );
+
+    // =============================================End===============================================
 
         // Panel Auxiliar para alinhamento do menu lateral
         JPanel listTop = new JPanel();
@@ -115,9 +115,10 @@ public class AVFrame extends JFrame implements ThreatListener {
             }   
         };
 
-        // Criação dos botões
-        Font menuFont = new Font("Segoe UI", Font.BOLD, 13);
+    // =============================================End===============================================
 
+        // Criação dos botões do menu
+        Font menuFont = new Font("Segoe UI", Font.BOLD, 13);
         JButton bl1 = new JButton("Scanner");
         bl1.setFont(menuFont);
         bl1.setVerticalTextPosition(SwingConstants.BOTTOM);
@@ -127,10 +128,7 @@ public class AVFrame extends JFrame implements ThreatListener {
         bl1.setBorderPainted(false);
         bl1.setFocusPainted(false);
         selectMenuButton(bl1);
-
-        ImageIcon icon1 = new ImageIcon(
-            getClass().getResource("/ui/resource/icon1.png")
-        );
+        ImageIcon icon1 = new ImageIcon(getClass().getResource("/ui/resource/icon1.png"));
         bl1.setIcon(icon1);
 
         JButton bl2 = new JButton("Directory Scanner");
@@ -141,10 +139,7 @@ public class AVFrame extends JFrame implements ThreatListener {
         bl2.setOpaque(true);
         bl2.setBorderPainted(false);
         bl2.setFocusPainted(false);
-
-        ImageIcon icon2 = new ImageIcon(
-            getClass().getResource("/ui/resource/icon2.png")
-        );
+        ImageIcon icon2 = new ImageIcon(getClass().getResource("/ui/resource/icon2.png"));
         bl2.setIcon(icon2);
 
         JButton bl3 = new JButton("Real Time Analyzer");
@@ -155,10 +150,7 @@ public class AVFrame extends JFrame implements ThreatListener {
         bl3.setOpaque(true);
         bl3.setBorderPainted(false);
         bl3.setFocusPainted(false);
-
-        ImageIcon icon3 = new ImageIcon(
-            getClass().getResource("/ui/resource/icon3.png")
-        );
+        ImageIcon icon3 = new ImageIcon(getClass().getResource("/ui/resource/icon3.png"));
         bl3.setIcon(icon3);
 
         JButton bl4 = new JButton("Quarantine");
@@ -169,10 +161,7 @@ public class AVFrame extends JFrame implements ThreatListener {
         bl4.setOpaque(true);
         bl4.setBorderPainted(false);
         bl4.setFocusPainted(false);
-
-        ImageIcon icon4 = new ImageIcon(
-            getClass().getResource("/ui/resource/icon4.png")
-        );
+        ImageIcon icon4 = new ImageIcon(getClass().getResource("/ui/resource/icon4.png"));
         bl4.setIcon(icon4);
 
         JButton about = new JButton("About");
@@ -183,22 +172,20 @@ public class AVFrame extends JFrame implements ThreatListener {
         about.setOpaque(true);
         about.setBorderPainted(false);
         about.setFocusPainted(false);
-
-        ImageIcon icon5 = new ImageIcon(
-            getClass().getResource("/ui/resource/icon5.png")
-        );
+        ImageIcon icon5 = new ImageIcon(getClass().getResource("/ui/resource/icon5.png"));
         about.setIcon(icon5);
 
+    // =============================================End===============================================
+
+        // Criação dos botões funcionais
         JButton scan = new JButton("Scan my Computer");
         scan.setFont(menuFont);
         scan.setBackground(Color.WHITE);
         scan.addActionListener(e -> {
 
-            // 🔹 Janela de logs
             ScanWindow logWindow = new ScanWindow();
             logWindow.setVisible(true);
 
-            // 🔹 Alerta inicial (mantido)
             JOptionPane pane = new JOptionPane("Verifying files...\nPlease wait.", JOptionPane.INFORMATION_MESSAGE);
             pane.setOptions(new Object[]{});
             
@@ -367,7 +354,6 @@ public class AVFrame extends JFrame implements ThreatListener {
 
             worker.execute();
         });
-
         dir.setBackground(Color.WHITE);
         dir.setFocusPainted(false);
         dir.setOpaque(true);
@@ -376,7 +362,6 @@ public class AVFrame extends JFrame implements ThreatListener {
         dir.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         Dimension checkBox = new Dimension(180, 25);
-
         JCheckBox temp = new JCheckBox("Temp");
         temp.setFont(menuFont);
         temp.setAlignmentX(CENTER_ALIGNMENT);
@@ -406,7 +391,6 @@ public class AVFrame extends JFrame implements ThreatListener {
         rtaToggle.addActionListener(e -> {
             if (!running[0]) {
 
-                // Verifica se pelo menos um checkbox está selecionado
                 if (!temp.isSelected() && !downloads.isSelected() && !desktop.isSelected()) {
                     JOptionPane.showMessageDialog(this, "Select at least one directory.", "Warning", JOptionPane.WARNING_MESSAGE);
                     return;
@@ -416,7 +400,6 @@ public class AVFrame extends JFrame implements ThreatListener {
                 rtaToggle.setText("Stop");
                 rtaToggle.setBackground(new Color(220, 120, 120));
 
-                // Exemplo de uso
                 if (temp.isSelected()) {
                 	RealTimeAnalyzer rta =
                 		    new RealTimeAnalyzer("/tmp", this);
@@ -438,7 +421,6 @@ public class AVFrame extends JFrame implements ThreatListener {
                 		Thread t = new Thread(rta);
                 		t.start();
                 }
-
             } else {
                 running[0] = false;
                 for (Thread t : threads) {
@@ -450,11 +432,10 @@ public class AVFrame extends JFrame implements ThreatListener {
                 rtaToggle.setBackground(Color.WHITE);
             }
         });
+    
+    // =============================================End===============================================
 
-
-
-
-        // Tamanho dos botões
+        // Tamanho e adição dos botoes ao menu
         Dimension blSize = new Dimension(160, 100);
 
         bl1.setMaximumSize(blSize);
@@ -499,23 +480,22 @@ public class AVFrame extends JFrame implements ThreatListener {
         listTop.add(createSeparator());
         listTop.add(Box.createVerticalStrut(10));
         listTop.add(createSeparator());
-
         list.add(listTop, BorderLayout.NORTH);
 
+    // =============================================End===============================================
+
         // Tela em destaque
-        // ======================================================================
         CardLayout cardLayout = new CardLayout();
         JPanel panelMain = new JPanel(cardLayout);
 
-        // ================= TELA 1 =================
+    // =============================================End===============================================
+
+        // ================= TELA 1 ===================
         JPanel t1 = new JPanel();
         t1.setLayout(new BorderLayout());
         t1.add(createHeader("Scanner"), BorderLayout.NORTH);
 
-        ImageIcon icon1p = new ImageIcon(
-                getClass().getResource("/ui/resource/icon1p.png")
-        );
-
+        ImageIcon icon1p = new ImageIcon(getClass().getResource("/ui/resource/icon1p.png"));
         JLabel iconLabel1 = new JLabel(icon1p);
         iconLabel1.setHorizontalAlignment(SwingConstants.CENTER);
         iconLabel1.setVerticalAlignment(SwingConstants.TOP);
@@ -531,15 +511,14 @@ public class AVFrame extends JFrame implements ThreatListener {
 
         t1.add(centerPanel1, BorderLayout.CENTER);
 
+    // =============================================End===============================================
+
         // ================= TELA 2 =================
         JPanel t2 = new JPanel();
         t2.setLayout(new BorderLayout());
         t2.add(createHeader("Directory"), BorderLayout.NORTH);
 
-        ImageIcon icon2p = new ImageIcon(
-                getClass().getResource("/ui/resource/icon2p.png")
-        );
-
+        ImageIcon icon2p = new ImageIcon(getClass().getResource("/ui/resource/icon2p.png"));
         JLabel iconLabel2 = new JLabel(icon2p);
         iconLabel2.setHorizontalAlignment(SwingConstants.CENTER);
         iconLabel2.setVerticalAlignment(SwingConstants.TOP);
@@ -555,15 +534,14 @@ public class AVFrame extends JFrame implements ThreatListener {
 
         t2.add(centerPanel2, BorderLayout.CENTER);
 
+    // =============================================End===============================================
+
         // ================= TELA 3 =================
         JPanel t3 = new JPanel();
         t3.setLayout(new BorderLayout());
         t3.add(createHeader("Real Time Analyzer"), BorderLayout.NORTH);
 
-        ImageIcon icon3p = new ImageIcon(
-            getClass().getResource("/ui/resource/icon3p.png")
-        );
-
+        ImageIcon icon3p = new ImageIcon(getClass().getResource("/ui/resource/icon3p.png"));
         JLabel iconLabel3 = new JLabel(icon3p);
         iconLabel3.setHorizontalAlignment(SwingConstants.CENTER);
         iconLabel3.setVerticalAlignment(SwingConstants.TOP);
@@ -590,12 +568,15 @@ public class AVFrame extends JFrame implements ThreatListener {
         centerPanel3.add(rtaToggle);
 
         t3.add(centerPanel3, BorderLayout.CENTER);
+    
+    // =============================================End===============================================
 
         // ================= TELA 4 =================
         JPanel t4 = new JPanel();
         t4.setLayout(new BorderLayout());
         t4.add(createHeader("Quarantine"), BorderLayout.NORTH);
         
+        // Tabela para o historico da quarentena
         File quarantine = new File(Paths.get("src", "storage", "quarentine").toString());
         File[] malwares = quarantine.listFiles();
         for (File m : malwares) {
@@ -614,14 +595,6 @@ public class AVFrame extends JFrame implements ThreatListener {
         	}
         }
 
-        /* String[] columns = {"File Location", "Date"};
-        DefaultTableModel quarantineModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false; 
-            }   
-        }; */
-
         JTable quarantineTable = new JTable(quarantineModel);
         quarantineTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         quarantineTable.setRowHeight(22);
@@ -634,6 +607,7 @@ public class AVFrame extends JFrame implements ThreatListener {
         actions.setLayout(new BoxLayout(actions, BoxLayout.Y_AXIS));
         actions.setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
 
+        // Botões funcionais da tela 4
         Dimension btnSize = new Dimension(160, 40);
         JButton deleteBtn = new JButton("Delete");
         deleteBtn.setFont(menuFont);
@@ -655,9 +629,6 @@ public class AVFrame extends JFrame implements ThreatListener {
         MoveQuarentine.removeFromQua(path);
         
         JOptionPane.showMessageDialog(this,"Malware deleted!","Success",JOptionPane.PLAIN_MESSAGE);
-        
-          //DELETA ARQUIVO AQUI
-
         quarantineModel.removeRow(row);
         });
 
@@ -678,13 +649,9 @@ public class AVFrame extends JFrame implements ThreatListener {
         }
         
         String path = (String) quarantineModel.getValueAt(row, 0);
-
-        //RESTAURA AQUI
-
         MoveQuarentine.restoreFromQua(path);
         
         JOptionPane.showMessageDialog(this,"File restored!","Success",JOptionPane.PLAIN_MESSAGE);
-        
         quarantineModel.removeRow(row);
         });
 
@@ -698,15 +665,14 @@ public class AVFrame extends JFrame implements ThreatListener {
 
         t4.add(center, BorderLayout.CENTER);
 
+    // =============================================End===============================================
+
         // ================= ABOUT =================
         JPanel tAbout = new JPanel();
         tAbout.setLayout(new BorderLayout());
         tAbout.add(createHeader("About"), BorderLayout.NORTH);
 
-        ImageIcon icon5p = new ImageIcon(
-            getClass().getResource("/ui/resource/icon5p.png")
-        );
-
+        ImageIcon icon5p = new ImageIcon(getClass().getResource("/ui/resource/icon5p.png"));
         JLabel iconLabel5 = new JLabel(icon5p);
         iconLabel5.setHorizontalAlignment(SwingConstants.CENTER);
         iconLabel5.setVerticalAlignment(SwingConstants.TOP);
@@ -751,6 +717,8 @@ public class AVFrame extends JFrame implements ThreatListener {
         contentWrapper.add(centerPanel4, BorderLayout.CENTER);
         tAbout.add(contentWrapper, BorderLayout.CENTER);
 
+    // =============================================End===============================================    
+
         // Listeners dos botões do Menu
         bl1.addActionListener(e -> {
             cardLayout.show(panelMain, "T1");
@@ -777,6 +745,8 @@ public class AVFrame extends JFrame implements ThreatListener {
             selectMenuButton(about);
         });
 
+    // =============================================End===============================================
+
         // Adiciona telas ao CardLayout
         panelMain.add(t1, "T1");
         panelMain.add(t2, "T2");
@@ -784,10 +754,9 @@ public class AVFrame extends JFrame implements ThreatListener {
         panelMain.add(t4, "T4");
         panelMain.add(tAbout, "ABOUT");
 
-        // Adicionar na Janela
+        // Adicionar menu auxiliar lateral e telas do cardlayout à janela principal
         add(list, BorderLayout.WEST);
         add(panelMain, BorderLayout.CENTER);
-
         setVisible(true);
     }
 }
