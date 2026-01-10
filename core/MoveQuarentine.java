@@ -3,6 +3,7 @@ package core;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.UUID;
 
 public class MoveQuarentine {
 	private static String quarentine = "src/storage/quarentine";
@@ -13,10 +14,14 @@ public class MoveQuarentine {
 		diretorio.mkdir();
 	}
 	
+	private static String generate_UUID() {
+		return UUID.randomUUID().toString();
+	}
 	
 	public static String moveToQua(String path, String date) {
-		Path destiny = Paths.get(MoveQuarentine.quarentine + "/" + Paths.get(path).getFileName());
-		Path InfosDestiny = Paths.get(MoveQuarentine.quarentine + "/" + Paths.get(path).getFileName() + ".INFO");
+		String uuid = MoveQuarentine.generate_UUID();
+		Path destiny = Paths.get(MoveQuarentine.quarentine + "/" + uuid);
+		Path InfosDestiny = Paths.get(MoveQuarentine.quarentine + "/" + uuid + ".INFO");
 		
 		String threatInfos = String.format("wfound=%s:nlocal=%s:date=%s", path, destiny.toString(), date);
 		
