@@ -20,6 +20,7 @@ public class DoScan {
         logger.log("Initializing scanner...");
 
         Scanner sc = new Scanner(logger);
+        sc.setFiles();
         ArrayList<String> result = sc.getFiles();
 
         logger.log("Scan completed.");

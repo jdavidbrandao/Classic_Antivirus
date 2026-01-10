@@ -40,12 +40,13 @@ public class RealTimeAnalyzer implements Runnable {
 
                     // Filtros importantes
                     if (!Files.isRegularFile(file)) continue;
-                    if (absPath.endsWith(".info") || absPath.endsWith(".tmp")) continue;
+                    if (absPath.endsWith(".INFO") || absPath.endsWith(".tmp")) continue;
                     if (processedFiles.contains(absPath)) continue;
 
                     if (analyzeFile(file)) {
                         processedFiles.add(absPath);
                         listener.onThreatDetected(absPath);
+          
                     }
                 }
 

@@ -2,9 +2,7 @@ package core;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 
 public class MoveQuarentine {
 	private static String quarentine = "src/storage/quarentine";
@@ -30,7 +28,15 @@ public class MoveQuarentine {
 			
 			Files.write(InfosDestiny, threatInfos.getBytes());
 			return destiny.toString();
-		} catch (IOException e) {
+		}
+		catch(FileAlreadyExistsException e) {
+			File malware = new File(path);
+			malware.delete();
+			return "SAMEFILEFOUND";
+		}
+		
+		catch (IOException e) {
+			System.out.println(e);
 			return "";
 		}
 	}

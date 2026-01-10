@@ -58,6 +58,7 @@ public class AVFrame extends JFrame implements ThreatListener {
 
     public void addThreat(String path, String date) {
     		String destiny = MoveQuarentine.moveToQua(path, date);
+    		if (destiny == "SAMEFILEFOUND") return;
     	
             if (quarantineModel.getRowCount() >= 50) {
             	quarantineModel.removeRow(0);
@@ -649,6 +650,7 @@ public class AVFrame extends JFrame implements ThreatListener {
         }
         
         String path = (String) quarantineModel.getValueAt(row, 0);
+        System.out.println(path);
         MoveQuarentine.restoreFromQua(path);
         
         JOptionPane.showMessageDialog(this,"File restored!","Success",JOptionPane.PLAIN_MESSAGE);
