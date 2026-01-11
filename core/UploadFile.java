@@ -5,7 +5,7 @@ import java.nio.file.Paths;
 
 public class UploadFile {
 	// Método que tem como parametros o camingo do arquivo e que tipo de algoritmo será aplicado nele
-	public boolean uploadFile(String caminhoArquivo, String algoritmo){
+	public static boolean uploadFile(String caminhoArquivo, String algoritmo){
 	    try{
 			// Lê todos os bytes do arquivo e armazena no array dados
 	        byte[] dados = Files.readAllBytes(Paths.get(caminhoArquivo));

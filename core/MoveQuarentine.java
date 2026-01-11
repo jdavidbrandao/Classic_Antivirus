@@ -23,7 +23,7 @@ public class MoveQuarentine {
 		Path destiny = Paths.get(MoveQuarentine.quarentine + "/" + uuid);
 		Path InfosDestiny = Paths.get(MoveQuarentine.quarentine + "/" + uuid + ".INFO");
 		
-		String threatInfos = String.format("wfound=%s:nlocal=%s:date=%s", path, destiny.toString(), date);
+		String threatInfos = String.format("wfound=%s::nlocal=%s::date=%s", path, destiny.toString(), date);
 		
 		if (!Files.exists(Paths.get(MoveQuarentine.quarentine))) {
 			MoveQuarentine.createQuarentine();
@@ -61,12 +61,23 @@ public class MoveQuarentine {
 		
 		try {
 			String content = Files.readString(suspiciousFileInfos.toPath());
-			String source = content.split(":")[0].split("=")[1];
+			String source = content.split("::")[0].split("=")[1];
 			
 			Files.move(Paths.get(path), Paths.get(source));
 			suspiciousFileInfos.delete();
 		} catch(IOException e) {
 			return;
+		}
+	}
+	
+	public static String getOriginPath(String path) {
+		File info = new File(path + ".INFO");
+		try {
+			String content = Files.readString(info.toPath());
+			String originpath = content.split(":")[0].split("=")[1];
+			return originpath;
+		} catch(IOException e) {
+			return "";
 		}
 	}
 

@@ -7,14 +7,12 @@ import java.util.HashMap;
 
 public class DoScan {
 
-    // MÉTODO ORIGINAL (fica igual)
     public static ArrayList<String> scanComputer() {
         Scanner sc = new Scanner();
         sc.setFiles();
         return sc.getFiles();
     }
 
-    // 🔹 NOVO MÉTODO COM LOG
     public static ArrayList<String> scanComputer(ScanLogger logger) {
 
         logger.log("Initializing scanner...");
@@ -54,12 +52,14 @@ public class DoScan {
                     new HeuristicsAnalyzer()
                 };
 
-                if (scanner[0].isMalicious()
-                 || scanner[1].isMalicious()
-                 || scanner[2].isMalicious()) {
-
-                    result.put(counter++, arquivo.getAbsolutePath());
+                if (scanner[0].isMalicious()) {
+                	result.put(counter++, arquivo.getAbsolutePath());
+                	continue;
                 }
+                
+                else if (scanner[1].isMalicious() || scanner[2].isMalicious()) {
+                	result.put(counter++, arquivo.getAbsolutePath());
+                	}
             }
         }
         return result;

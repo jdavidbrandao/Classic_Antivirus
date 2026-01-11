@@ -60,6 +60,7 @@ public class Scanner {
                         Antivirus.getFileContent();
                         if (method.isMalicious()) {
                             malicious = true;
+                            break;
                         }
                     }
 

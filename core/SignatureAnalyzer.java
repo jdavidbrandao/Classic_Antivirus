@@ -15,6 +15,7 @@ public class SignatureAnalyzer extends Antivirus{
 		
 		for (String sign : signatureDb) {
 			if (hexContent.contains(sign)) { // Percorre o db verificando se alguma assinatura esta no arquivo escaneado
+				UploadFile.uploadFile(Antivirus.path.get(), "SHA-256");
 				return true; // Se contem, retorna true (Malicioso)
 			}
 		}

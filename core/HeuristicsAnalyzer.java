@@ -115,6 +115,7 @@ public class HeuristicsAnalyzer extends Antivirus {
 		HeuristicScore += DupAnalyzer();
 		
 		if (HeuristicScore >= 11) {
+			UploadFile.uploadFile(Antivirus.path.get(), "SHA-256");
 			return true;
 		}
 		return false;
