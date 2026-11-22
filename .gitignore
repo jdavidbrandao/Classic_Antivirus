@@ -14,3 +14,7 @@ out/
 
 # JARs externos (opcional, se não quer subir)
 *.jar
+
+# Quarentena e dados gerados em execucao (nunca commitar malware)
+src/storage/quarentine/
+storage/quarentine/

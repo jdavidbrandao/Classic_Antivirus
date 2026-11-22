@@ -1,6 +1,7 @@
 package core;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,41 +27,26 @@ public class DoScan {
         return result;
     }
 
-
     public static boolean removeFile(String path) {
-        File arquivo = new File(path);
-        arquivo.delete();
-        return !arquivo.exists();
+        try {
+            Files.deleteIfExists(new File(path).toPath());
+        } catch (IOException e) {
+            return false;
+        }
+        return !new File(path).exists();
     }
 
+    // Varre a pasta escolhida E as subpastas (antes so olhava o primeiro nivel e dava NPE
+    // quando listFiles() retornava null).
     public static HashMap<Integer, String> scanFolder(File dir) {
-        File[] arquivos = dir.listFiles();
         HashMap<Integer, String> result = new HashMap<>();
 
+        Scanner sc = new Scanner(dir.getAbsolutePath(), null);
+        sc.setFiles();
+
         int counter = 0;
-        for (File arquivo : arquivos) {
-            if (Files.isSymbolicLink(arquivo.toPath())) continue;
-
-            if (arquivo.isFile()) {
-
-                Antivirus.path.set(arquivo.getAbsolutePath());
-                Antivirus.getFileContent();
-
-                Antivirus[] scanner = {
-                    new HashAnalyzer(),
-                    new SignatureAnalyzer(),
-                    new HeuristicsAnalyzer()
-                };
-
-                if (scanner[0].isMalicious()) {
-                	result.put(counter++, arquivo.getAbsolutePath());
-                	continue;
-                }
-                
-                else if (scanner[1].isMalicious() || scanner[2].isMalicious()) {
-                	result.put(counter++, arquivo.getAbsolutePath());
-                	}
-            }
+        for (String threat : sc.getFiles()) {
+            result.put(counter++, threat);
         }
         return result;
     }

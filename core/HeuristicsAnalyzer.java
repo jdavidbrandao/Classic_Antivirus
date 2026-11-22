@@ -1,124 +1,187 @@
 package core;
 
-import java.util.*;
-import storage.getdb;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
-// Executar uma sequencia de heuristicas do arquivo analisado
+import storage.getdb;
+
+// Executa uma sequencia de heuristicas no arquivo analisado
 public class HeuristicsAnalyzer extends Antivirus {
-	private ArrayList<String> extract = new ArrayList<>(); //Atributo encapsulado, contem as strings extraidas
-	
-	public void setExtract(byte[] data, int minLength){ // set (encapsulamento)
-		StringBuilder sb = new StringBuilder(); // String builder para juntar os caracteres obtidos
-		
-		for (byte b : data) {
-			if (b >= 32 && b <= 126) {
-				sb.append((char) b);	// Se o valor numerico do byte for maior que 32 e menor que 126, entao e um caracter (tabela ASCII)
-										// Adiciona o caractere no stringbuilder
-			} else {
-				if (sb.length() >= minLength) {
-					extract.add(sb.toString()); // Se o tamanho da palavra formata satisfazer o tamanho definido, adiciona no arraylist
-				}
-			sb.setLength(0); // Limpa o buffer do arraylist
-			}
-		}
-		
-		if (sb.length() >= minLength) {
-			extract.add(sb.toString()); // Se houver alguma coisa ainda salva no buffer e satisfazer o tamanho, salva no ArrayList
-		}
-	}
-	
-	public ArrayList<String> getExtract() { // Obtem as Strings extraidas
-		return extract;
-	}
-	
-	public Boolean isStringMalicious(String str) { // Verifica se uma string esta no banco de dados de strings maliciosas
-		getdb db = new getdb(); // Instancia de getdb
 
-		ArrayList<String> stringsDb = db.getStringsDb(); // Pega o banco de dados de strings e salva no ArrayList stringsDb
+    private static final int THRESHOLD = 11; // pontuacao minima para considerar malicioso
 
-		
-		for (String mw : stringsDb) {
-			if (str.toLowerCase().matches(".*\\b" + Pattern.quote(mw) + "\\b.*")) { // Verifica se a string contem a string verificada no db
-				return true;
-			}
-		}
-		return false;
-		
-	}
-	
-	public int StringAnalyzer() {
-		byte[] data = Antivirus.fileContent.get();
-		setExtract(data, 5); // Extrai strings
-		ArrayList<String> strings = getExtract();	// Pega as strings e armazena 
-		ArrayList<String> alreadySeen = new ArrayList<>();
+    private final ArrayList<String> extract = new ArrayList<>(); // strings extraidas do arquivo
+    private String lowerContent;                                 // conteudo em minusculas (calculado 1 vez)
 
-		int ocurrences = 0; // Contador de ocorrencias de strings maliciosas
-							// Ter 1 ou 2 strings suspeitas nao signfica que o arquivo e um malware
-							// por isso o contador
-		for (String test : strings) {
-			if (!alreadySeen.contains(test) && isStringMalicious(test) == true) {
-				alreadySeen.add(test);
-				ocurrences += 1; // Se contem uma string suspeita, adiciona 1 no contador
-			}
-		}
+    // ---------------------------------------------------------------
+    // Termos do banco (compilados uma unica vez e reaproveitados)
+    // ---------------------------------------------------------------
 
-		if (ocurrences >= 10) {
-			return 10; 		// Durante alguns testes verifiquei que um binario malicioso costuma ter acima de 100 strins suspeitas
-		} else if (ocurrences >= 3) {
-			return 7; // Se nao for malicioso, retorna false
-		}
-		return 1;
-	}
-	
-	public int ShellAnalyzer() {
-		ArrayList<String> s = extract;
-		
-		for (String st : s) {
-			if (st.contains("/bin/sh") || st.contains("/bin/bash")) {
-				return 4;
-			}
-		}
-		return 0;
-	}
-	
-	public int NetworkAnalyzer() {
-		String s = new String(Antivirus.fileContent.get());
-		int score = 0;
-		
-		if (s.toLowerCase().contains("af_inet")) score++;
-		if (s.toLowerCase().contains("sock_stream")) score++;
-		if (s.toLowerCase().contains("htons")) score++;
-		if (s.toLowerCase().contains("inet_addr")) score++;
-		if (s.toLowerCase().contains("socket")) score++;
-		if (s.toLowerCase().contains("send")) score++;
-		
-		return score;
-	}
-	
-	public int DupAnalyzer() {
-		String s = new String(Antivirus.fileContent.get());
-		int score = 0;
-		if (s.toLowerCase().contains("dup2(")) score++;
-		
-		if (score >= 2) return 3;
-		if (score == 1) return 1;
-		return 0;
-	}
-		
-	public boolean isMalicious() {
-		int HeuristicScore = 0;
-		
-		HeuristicScore += StringAnalyzer();
-		HeuristicScore += ShellAnalyzer();
-		HeuristicScore += NetworkAnalyzer();
-		HeuristicScore += DupAnalyzer();
-		
-		if (HeuristicScore >= 11) {
-			UploadFile.uploadFile(Antivirus.path.get(), "SHA-256");
-			return true;
-		}
-		return false;
+    private static final class Term {
+        final String lower;
+        final Pattern pattern;
+        Term(String lower, Pattern pattern) { this.lower = lower; this.pattern = pattern; }
+    }
 
-	}
+    private static List<String> cachedSource = null;
+    private static List<Term> cachedTerms = new ArrayList<>();
+
+    private static boolean isWordChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '_';
+    }
+
+    /**
+     * \b so funciona quando a borda do termo e letra/numero. Para termos como "system("
+     * usamos lookaround apenas nas bordas que sao "de palavra".
+     */
+    private static Pattern compile(String term) {
+        String pre = isWordChar(term.charAt(0)) ? "(?<![\\p{L}\\p{N}_])" : "";
+        String suf = isWordChar(term.charAt(term.length() - 1)) ? "(?![\\p{L}\\p{N}_])" : "";
+        return Pattern.compile(pre + Pattern.quote(term) + suf);
+    }
+
+    private static synchronized List<Term> loadTerms() {
+        ArrayList<String> source = new getdb().getStringsDb();
+        if (cachedSource == null || !cachedSource.equals(source)) {
+            List<Term> terms = new ArrayList<>();
+            for (String raw : source) {
+                // Minusculas dos DOIS lados: antes so o texto do arquivo era convertido
+                // e entradas como "CreateRemoteThread" nunca casavam.
+                String lower = raw.toLowerCase(Locale.ROOT);
+                if (lower.isEmpty()) continue;
+                terms.add(new Term(lower, compile(lower)));
+            }
+            cachedSource = source;
+            cachedTerms = terms;
+        }
+        return cachedTerms;
+    }
+
+    // ---------------------------------------------------------------
+    // Extracao de strings
+    // ---------------------------------------------------------------
+
+    public void setExtract(byte[] data, int minLength) {
+        extract.clear();
+        StringBuilder sb = new StringBuilder();
+
+        for (byte b : data) {
+            if (b >= 32 && b <= 126) {
+                sb.append((char) b); // caractere ASCII imprimivel
+            } else {
+                if (sb.length() >= minLength) {
+                    extract.add(sb.toString());
+                }
+                sb.setLength(0);
+            }
+        }
+        if (sb.length() >= minLength) {
+            extract.add(sb.toString());
+        }
+    }
+
+    public ArrayList<String> getExtract() {
+        return extract;
+    }
+
+    public Boolean isStringMalicious(String str) {
+        String lower = str.toLowerCase(Locale.ROOT);
+        for (Term t : loadTerms()) {
+            // contains() e barato e descarta quase tudo antes do regex
+            if (lower.contains(t.lower) && t.pattern.matcher(lower).find()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ---------------------------------------------------------------
+    // Heuristicas
+    // ---------------------------------------------------------------
+
+    public int StringAnalyzer() {
+        byte[] data = Antivirus.fileContent.get();
+        if (data == null) return 0;
+        setExtract(data, 5);
+
+        Set<String> alreadySeen = new HashSet<>();
+        int occurrences = 0; // 1 ou 2 strings suspeitas nao significam malware, por isso o contador
+
+        for (String test : extract) {
+            if (alreadySeen.add(test) && isStringMalicious(test)) {
+                occurrences++;
+            }
+        }
+
+        if (occurrences >= 10) return 10;
+        if (occurrences >= 3) return 7;
+        return 0; // (antes retornava 1 mesmo sem nenhuma ocorrencia)
+    }
+
+    public int ShellAnalyzer() {
+        byte[] data = Antivirus.fileContent.get();
+        if (data == null) return 0;
+        if (extract.isEmpty()) setExtract(data, 5); // nao depende mais da ordem das chamadas
+
+        for (String st : extract) {
+            if (st.contains("/bin/sh") || st.contains("/bin/bash")) {
+                return 4;
+            }
+        }
+        return 0;
+    }
+
+    private String lowerContent() {
+        if (lowerContent == null) {
+            byte[] data = Antivirus.fileContent.get();
+            // ISO_8859_1: 1 byte = 1 char, sem depender do charset da maquina
+            lowerContent = data == null ? "" : new String(data, StandardCharsets.ISO_8859_1).toLowerCase(Locale.ROOT);
+        }
+        return lowerContent;
+    }
+
+    public int NetworkAnalyzer() {
+        String s = lowerContent();
+        int score = 0;
+        // "send" foi removido: aparece em praticamente qualquer arquivo ("sender", "resend"...)
+        for (String key : new String[] { "af_inet", "sock_stream", "htons", "inet_addr", "socket" }) {
+            if (s.contains(key)) score++;
+        }
+        return score;
+    }
+
+    // Reverse shell costuma redirecionar stdin/stdout/stderr com 3 chamadas dup2(
+    public int DupAnalyzer() {
+        String s = lowerContent();
+        int count = 0;
+        int idx = 0;
+        while ((idx = s.indexOf("dup2(", idx)) >= 0) {
+            count++;
+            idx += 5;
+        }
+        if (count >= 3) return 3;
+        if (count >= 1) return 1;
+        return 0;
+    }
+
+    public boolean isMalicious() {
+        if (Antivirus.fileContent.get() == null) return false;
+
+        int heuristicScore = 0;
+        heuristicScore += StringAnalyzer();
+        heuristicScore += ShellAnalyzer();
+        heuristicScore += NetworkAnalyzer();
+        heuristicScore += DupAnalyzer();
+
+        if (heuristicScore >= THRESHOLD) {
+            UploadFile.uploadFile(Antivirus.path.get(), "SHA-256");
+            return true;
+        }
+        return false;
+    }
 }

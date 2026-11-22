@@ -1,7 +1,10 @@
 package ui;
 
+import javax.swing.SwingUtilities;
+
 public class Exec {
     public static void main(String[] args) {
-        new AVFrame("Pega-Gato");
+        // Swing deve ser criado na thread de eventos (EDT)
+        SwingUtilities.invokeLater(() -> new AVFrame("Pega-Gato"));
     }
 }

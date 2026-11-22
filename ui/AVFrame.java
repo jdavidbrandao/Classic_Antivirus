@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import core.*;
+import storage.AppPaths;
 
 @SuppressWarnings("serial")
 public class AVFrame extends JFrame implements ThreatListener {
@@ -56,36 +57,72 @@ public class AVFrame extends JFrame implements ThreatListener {
         return sep;
     }
 
-    public void addThreat(String path, String date, int id) {
-    	// 0 -> Arquivo pego fora da quarentena
-    	// 1 -> Arquivo da quarentena
-    		if (id == 0) {
-	    		String destiny = MoveQuarentine.moveToQua(path, date);
-	    		if (destiny == "SAMEFILEFOUND") MoveQuarentine.moveToQua(path, date);
-    		}
-    		else {
-    			path = MoveQuarentine.getOriginPath(path);
-    		}
-    	
-            if (quarantineModel.getRowCount() >= 50) {
-            	quarantineModel.removeRow(0);
-            }
-            
-            quarantineModel.addRow(new Object[] {path, date});
+    // Move o arquivo para a quarentena e, se deu certo, adiciona a linha na tabela.
+    // Retorna false se a quarentena FALHOU (o arquivo continua no lugar original).
+    private boolean quarantineFile(String path) {
+        String date = LocalDateTime.now().toString();
+        String destiny = MoveQuarentine.moveToQua(path, date);
+        if (destiny.isEmpty()) return false;
+        addRow(path, date, destiny);
+        return true;
     }
-    
+
+    // A coluna 3 (oculta) guarda o caminho real do arquivo dentro da quarentena
+    private void addRow(String origin, String date, String quarantinedPath) {
+        quarantineModel.addRow(new Object[] { origin, date, quarantinedPath });
+    }
+
+    // Resumo unico para os dois tipos de varredura (antes eram 2 dialogos por ameaca,
+    // e dizia "Your system is safe" mesmo com ameacas encontradas ou quarentena falhando)
+    private void handleThreats(java.util.List<String> threats) {
+        if (threats.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No threats detected.", "No Threat Detected", JOptionPane.PLAIN_MESSAGE);
+            return;
+        }
+
+        StringBuilder moved = new StringBuilder();
+        StringBuilder failed = new StringBuilder();
+        for (String threat : threats) {
+            if (quarantineFile(threat)) moved.append(" - ").append(threat).append("\n");
+            else failed.append(" - ").append(threat).append("\n");
+        }
+
+        StringBuilder msg = new StringBuilder();
+        msg.append(threats.size()).append(" threat(s) found.\n");
+        if (moved.length() > 0) msg.append("\nMoved to quarantine:\n").append(moved);
+        if (failed.length() > 0) msg.append("\nCould NOT be quarantined (check permissions):\n").append(failed);
+
+        JTextArea area = new JTextArea(msg.toString());
+        area.setEditable(false);
+        JScrollPane pane = new JScrollPane(area);
+        pane.setPreferredSize(new Dimension(520, 220));
+
+        JOptionPane.showMessageDialog(this, pane, "Threat Detected",
+            failed.length() > 0 ? JOptionPane.ERROR_MESSAGE : JOptionPane.WARNING_MESSAGE);
+    }
+
     @Override
     public void onThreatDetected(String path) {
         SwingUtilities.invokeLater(() -> {
+            boolean moved = quarantineFile(path);
             JOptionPane.showMessageDialog(
                 this,
-                "Malware detected:\n" + path,
+                (moved ? "Malware detected and moved to quarantine:\n"
+                       : "Malware detected, but it could NOT be quarantined:\n") + path,
                 "WARNING",
                 JOptionPane.ERROR_MESSAGE
             );
-
-            addThreat(path, LocalDateTime.now().toString(), 0);
         });
+    }
+
+    @Override
+    public void onMonitorError(String directory, String message) {
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+            this,
+            "Could not monitor " + directory + ":\n" + message,
+            "Real Time Analyzer",
+            JOptionPane.WARNING_MESSAGE
+        ));
     }
 
     public class ScanWindow extends JFrame {
@@ -96,6 +133,7 @@ public class AVFrame extends JFrame implements ThreatListener {
             setTitle("Scanning...");
             setSize(700, 500);
             setLocationRelativeTo(null);
+            setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
             area = new JTextArea();
             area.setEditable(false);
@@ -115,6 +153,7 @@ public class AVFrame extends JFrame implements ThreatListener {
         setSize(800, 610);
         setLayout(new BorderLayout());
         setResizable(false);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
 
     // =============================================End===============================================
 
@@ -136,7 +175,7 @@ public class AVFrame extends JFrame implements ThreatListener {
         JPanel listTop = new JPanel();
         listTop.setLayout(new BoxLayout(listTop, BoxLayout.Y_AXIS));
         
-        String[] columns = {"File Location", "Date"}; 
+        String[] columns = {"File Location", "Date", "Quarantined"}; 
         quarantineModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -248,34 +287,7 @@ public class AVFrame extends JFrame implements ThreatListener {
 
                         logWindow.log("\nScan finished.");
 
-                        if (threatFound.size() == 0) {
-                            JOptionPane.showMessageDialog(
-                                null,
-                                "No threats detected.\nYour system is safe.",
-                                "No Threat Detected",
-                                JOptionPane.PLAIN_MESSAGE
-                            );
-                        }
-
-                        for (String threat : threatFound) {
-
-                            JOptionPane.showMessageDialog(
-                                null,
-                                "Threat detected!\nA malicious file was found: " + threat,
-                                "Threat Detected",
-                                JOptionPane.ERROR_MESSAGE
-                            );
-
-                            addThreat(threat, LocalDateTime.now().toString(), 0);
-
-                            JOptionPane.showMessageDialog(
-                                null,
-                                "Threat moved to Quarantine.\nYour system is safe.",
-                                "Your system is safe",
-                                JOptionPane.PLAIN_MESSAGE
-                            );
-                        }
-
+                        handleThreats(threatFound);
                     } catch (Exception ex) {
                     	System.out.println(ex);
                         JOptionPane.showMessageDialog(
@@ -335,44 +347,7 @@ public class AVFrame extends JFrame implements ThreatListener {
 
                     try {
                         HashMap<Integer, String> threatFound = get();
-
-                        if (!threatFound.isEmpty()) {
-                            for (Integer indice : threatFound.keySet()) {
-                                JOptionPane.showMessageDialog(
-                                        null,
-                                        "Threat detected!\nLocation: " + threatFound.get(indice)
-                                                + "\nA malicious file was found.",
-                                        "Threat Detected",
-                                        JOptionPane.ERROR_MESSAGE
-                                );
-                            }
-
-                            for (Integer indice : threatFound.keySet()) {
-                                try {
-                                    addThreat(threatFound.get(indice), LocalDateTime.now().toString(), 0);
-                                    JOptionPane.showMessageDialog(
-                                            null,
-                                            "Threat moved to Quarantine!",
-                                            "Success",
-                                            JOptionPane.PLAIN_MESSAGE
-                                    );
-                                } catch (Exception ex) {
-                                    JOptionPane.showMessageDialog(
-                                            null,
-                                            "Unable to open directory.",
-                                            "Error",
-                                            JOptionPane.ERROR_MESSAGE
-                                    );
-                                }
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(
-                                    null,
-                                    "No threats detected.\nYour system is safe.",
-                                    "No Threat Detected",
-                                    JOptionPane.PLAIN_MESSAGE
-                            );
-                        }
+                        handleThreats(new ArrayList<>(threatFound.values()));
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -399,7 +374,7 @@ public class AVFrame extends JFrame implements ThreatListener {
         downloads.setAlignmentX(CENTER_ALIGNMENT);
         downloads.setMaximumSize(checkBox);
 
-        JCheckBox desktop = new JCheckBox("Destkop");
+        JCheckBox desktop = new JCheckBox("Desktop");
         desktop.setFont(menuFont);
         desktop.setAlignmentX(CENTER_ALIGNMENT);
         desktop.setMaximumSize(checkBox);
@@ -414,47 +389,48 @@ public class AVFrame extends JFrame implements ThreatListener {
         rtaToggle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         final boolean[] running = { false };
-        Thread[] threads = new Thread[3];
+        final java.util.List<RealTimeAnalyzer> monitors = new ArrayList<>();
         rtaToggle.addActionListener(e -> {
             if (!running[0]) {
 
-                if (!temp.isSelected() && !downloads.isSelected() && !desktop.isSelected()) {
+                // Pastas do usuario atual (Ubuntu/XDG), nada fixo para o usuario "kali"
+                java.util.List<String> dirs = new ArrayList<>();
+                if (temp.isSelected()) dirs.add(AppPaths.tempDir().toString());
+                if (downloads.isSelected()) dirs.add(AppPaths.downloadsDir().toString());
+                if (desktop.isSelected()) dirs.add(AppPaths.desktopDir().toString());
+
+                if (dirs.isEmpty()) {
                     JOptionPane.showMessageDialog(this, "Select at least one directory.", "Warning", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
+
+                StringBuilder missing = new StringBuilder();
+                for (String d : dirs) {
+                    if (!Files.isDirectory(Paths.get(d))) {
+                        missing.append(" - ").append(d).append("\n");
+                        continue;
+                    }
+                    RealTimeAnalyzer rta = new RealTimeAnalyzer(d, this);
+                    monitors.add(rta);
+                    rta.start();
+                }
+
+                if (missing.length() > 0) {
+                    JOptionPane.showMessageDialog(this, "Folder(s) not found and not monitored:\n" + missing,
+                        "Warning", JOptionPane.WARNING_MESSAGE);
+                }
+                if (monitors.isEmpty()) return; // nada foi iniciado
 
                 running[0] = true;
                 rtaToggle.setText("Stop");
                 rtaToggle.setBackground(new Color(220, 120, 120));
 
-                if (temp.isSelected()) {
-                	RealTimeAnalyzer rta =
-                		    new RealTimeAnalyzer("/tmp", this);
-
-                		Thread t = new Thread(rta);
-                		t.start();
-                }
-                if (downloads.isSelected()) {
-                	RealTimeAnalyzer rta =
-                		    new RealTimeAnalyzer("/home/kali/Downloads", this);
-
-                		Thread t = new Thread(rta);
-                		t.start();
-                }
-                if (desktop.isSelected()) {
-                	RealTimeAnalyzer rta =
-                		    new RealTimeAnalyzer("/home/kali/Desktop", this);
-
-                		Thread t = new Thread(rta);
-                		t.start();
-                }
             } else {
-                running[0] = false;
-                for (Thread t : threads) {
-                	if (t != null && t.isAlive()) {
-                		t.interrupt();
-                	}
+                for (RealTimeAnalyzer rta : monitors) {
+                    rta.stop();
                 }
+                monitors.clear();
+                running[0] = false;
                 rtaToggle.setText("Start");
                 rtaToggle.setBackground(Color.WHITE);
             }
@@ -603,26 +579,13 @@ public class AVFrame extends JFrame implements ThreatListener {
         t4.setLayout(new BorderLayout());
         t4.add(createHeader("Quarantine"), BorderLayout.NORTH);
         
-        // Tabela para o historico da quarentena
-        File quarantine = new File(Paths.get("src", "storage", "quarentine").toString());
-        File[] malwares = quarantine.listFiles();
-        for (File m : malwares) {
-        	if (m.getAbsolutePath().endsWith(".INFO")) {
-        		try {
-	        		String content = Files.readString(m.toPath());
-	        		String[] infos = content.split("::");
-	        		
-	        		String qLocal = infos[1].split("=")[1];
-	        		String date = infos[2].split("=")[1];
-	        		
-	        		addThreat(qLocal, date, 1);
-        		} catch(IOException e) {
-        			continue;
-        		}
-        	}
+        // Tabela para o historico da quarentena (lista vazia se a pasta ainda nao existe)
+        for (MoveQuarentine.Entry q : MoveQuarentine.listEntries()) {
+            addRow(q.origin, q.date, q.quarantined);
         }
 
         JTable quarantineTable = new JTable(quarantineModel);
+        quarantineTable.removeColumn(quarantineTable.getColumnModel().getColumn(2)); // oculta o caminho interno
         quarantineTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         quarantineTable.setRowHeight(22);
         quarantineTable.getTableHeader().setReorderingAllowed(false);
@@ -646,33 +609,20 @@ public class AVFrame extends JFrame implements ThreatListener {
         deleteBtn.setMaximumSize(btnSize);
         deleteBtn.setMinimumSize(btnSize);
         deleteBtn.addActionListener(e -> {
-        int row = quarantineTable.getSelectedRow();
-            if (row == -1) {
-                JOptionPane.showMessageDialog(this, "Select a threat first.",  "Warning", JOptionPane.WARNING_MESSAGE);
+            int viewRow = quarantineTable.getSelectedRow();
+            if (viewRow == -1) {
+                JOptionPane.showMessageDialog(this, "Select a threat first.", "Warning", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            
-        String path = (String) quarantineModel.getValueAt(row, 0);
+            int row = quarantineTable.convertRowIndexToModel(viewRow);
+            String quarantinedPath = (String) quarantineModel.getValueAt(row, 2);
 
-        File qt = new File(Paths.get("src", "storage", "quarentine").toString());
-        File[] quarentena = qt.listFiles();
-        for (File f : quarentena) {
-        	if (f.getAbsolutePath().endsWith(".INFO")) {
-        		try {
-        			String content = Files.readString(Paths.get(f.getAbsolutePath()));
-        			String originPath = content.split("::")[0].split("=")[1];
-        			String fileInQua = content.split("::")[1].split("=")[1];
-        			if (path.equals(originPath)) {
-        				MoveQuarentine.removeFromQua(fileInQua);
-        			}
-        		} catch (IOException e5) {
-        			e5.printStackTrace();
-        		}
-        	}
-        }
-        
-        JOptionPane.showMessageDialog(this,"Malware deleted!","Success",JOptionPane.PLAIN_MESSAGE);
-        quarantineModel.removeRow(row);
+            if (MoveQuarentine.removeFromQua(quarantinedPath)) {
+                quarantineModel.removeRow(row);
+                JOptionPane.showMessageDialog(this, "Malware deleted!", "Success", JOptionPane.PLAIN_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Could not delete the quarantined file.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         JButton restoreBtn = new JButton("Restore");
@@ -685,34 +635,21 @@ public class AVFrame extends JFrame implements ThreatListener {
         restoreBtn.setMaximumSize(btnSize);
         restoreBtn.setMinimumSize(btnSize);
         restoreBtn.addActionListener(e -> {
-        int row = quarantineTable.getSelectedRow();
-        if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Select a threat first.",  "Warning", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        String path = (String) quarantineModel.getValueAt(row, 0);
-        
-        File qt = new File(Paths.get("src", "storage", "quarentine").toString());
-        File[] quarentena = qt.listFiles();
-        for (File f : quarentena) {
-        	if (f.getAbsolutePath().endsWith(".INFO")) {
-        		try {
-        			String content = Files.readString(Paths.get(f.getAbsolutePath()));
-        			String originPath = content.split("::")[0].split("=")[1];
-        			String fileInQua = content.split("::")[1].split("=")[1];
-        			
-        			if (path.equals(originPath)) {
-        				MoveQuarentine.restoreFromQua(fileInQua);
-        			}
-        		} catch (IOException e5) {
-        			e5.printStackTrace();
-        		}
-        	}
-        }
-        
-        JOptionPane.showMessageDialog(this,"File restored!","Success",JOptionPane.PLAIN_MESSAGE);
-        quarantineModel.removeRow(row);
+            int viewRow = quarantineTable.getSelectedRow();
+            if (viewRow == -1) {
+                JOptionPane.showMessageDialog(this, "Select a threat first.", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            int row = quarantineTable.convertRowIndexToModel(viewRow);
+            String quarantinedPath = (String) quarantineModel.getValueAt(row, 2);
+
+            String restored = MoveQuarentine.restoreFromQua(quarantinedPath);
+            if (!restored.isEmpty()) {
+                quarantineModel.removeRow(row);
+                JOptionPane.showMessageDialog(this, "File restored to:\n" + restored, "Success", JOptionPane.PLAIN_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Could not restore the file.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         actions.add(deleteBtn);

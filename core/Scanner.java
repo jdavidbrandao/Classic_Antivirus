@@ -1,18 +1,25 @@
 package core;
 
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.io.File;
-import java.nio.file.*;
+
+import storage.AppPaths;
 
 public class Scanner {
 
-    private String initFolder;
-    private ArrayList<String> files = new ArrayList<>();
-    private ArrayList<String> folders = new ArrayList<>();
-    private ScanLogger logger; 
+    private final String initFolder;
+    private final ArrayList<String> files = new ArrayList<>();
+    private final ScanLogger logger;
 
+    // Pasta padrao: Desktop do usuario atual (Ubuntu/XDG), ou a home se nao existir
     public Scanner() {
-        initFolder = Paths.get("/home", "kali", "Desktop").toString();
+        this(AppPaths.defaultScanDir().toString(), null);
     }
 
     public Scanner(String initFolder, ScanLogger logger) {
@@ -21,8 +28,7 @@ public class Scanner {
     }
 
     public Scanner(ScanLogger logger) {
-        this();
-        this.logger = logger;
+        this(AppPaths.defaultScanDir().toString(), logger);
     }
 
     private void log(String msg) {
@@ -31,57 +37,58 @@ public class Scanner {
         }
     }
 
-    private void spider(String folder) {
-        File diretorio = new File(folder);
-        File[] arquivos = diretorio.listFiles();
-
-        if (arquivos != null) {
-            for (File arquivo : arquivos) {
-
-                log("Analyzing: " + arquivo.getAbsolutePath());
-
-                if (Files.isSymbolicLink(arquivo.toPath())) continue;
-
-                if (arquivo.isDirectory() &&
-                    !folders.contains(arquivo.getAbsolutePath())) {
-
-                    folders.add(arquivo.getAbsolutePath());
-                    spider(arquivo.getAbsolutePath());
-                }
-
-                else if (arquivo.isFile() &&
-                         !files.contains(arquivo.getAbsolutePath())) {
-
-                    boolean malicious = false;
-
-                    Antivirus[] scm = Antivirus.getScanM();
-                    for (Antivirus method : scm) {
-                        Antivirus.path.set(arquivo.getAbsolutePath());
-                        Antivirus.getFileContent();
-                        if (method.isMalicious()) {
-                            malicious = true;
-                            break;
-                        }
-                    }
-
-                    if (malicious) {
-                        log("⚠️ THREAT: " + arquivo.getAbsolutePath());
-                        files.add(arquivo.getAbsolutePath());
-                    }
-                }
-            }
-        }
-    }
-
     private void spider() {
-        spider(initFolder);
+        Path start = Paths.get(initFolder);
+        if (!Files.isDirectory(start)) {
+            log("Directory not found: " + start);
+            return;
+        }
+
+        // Nunca varre a propria pasta de bancos/quarentena (senao reacusaria os arquivos quarentenados)
+        Path skip = AppPaths.storageDir().toAbsolutePath().normalize();
+
+        try {
+            // walkFileTree nao segue links simbolicos e continua mesmo com pastas sem permissao
+            Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
+
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (dir.toAbsolutePath().normalize().equals(skip)) return FileVisitResult.SKIP_SUBTREE;
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (Thread.currentThread().isInterrupted()) return FileVisitResult.TERMINATE;
+                    if (!attrs.isRegularFile()) return FileVisitResult.CONTINUE; // ignora links, sockets, etc.
+
+                    String abs = file.toAbsolutePath().toString();
+                    log("Analyzing: " + abs);
+
+                    // Le o arquivo UMA vez e roda todos os analisadores
+                    if (Antivirus.scanFile(abs)) {
+                        log("[!] THREAT: " + abs);
+                        files.add(abs);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    log("Skipped (no access): " + file);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            log("Scan error: " + e.getMessage());
+        }
     }
 
     public ArrayList<String> getFiles() {
         return files;
     }
-    
+
     public void setFiles() {
-    	spider();
+        spider();
     }
 }
